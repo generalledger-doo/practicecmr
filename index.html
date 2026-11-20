@@ -1,8 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Practice Desk CRM</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Literata:opsz,wght@7..72,600&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" onerror="var s=document.createElement('script');s.src='vendor/html2pdf.bundle.min.js';document.head.appendChild(s)"></script>
 <style>
 /* Layout: ledger-style workspace — narrow nav rail, working area of tables and a pipeline, edit drawer on the right, full-height document composer */
 :root{
@@ -206,12 +211,13 @@ code{font-family:var(--font-data);font-size:11.5px;background:var(--sunken);padd
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 </style>
-
+</head>
+<body>
 <div class="app">
   <nav class="rail" id="nav" aria-label="Sections">
     <div class="brand">Practice Desk<small>Accounting CRM</small></div>
     <a href="#overview" data-v="overview">Overview</a>
-    <a href="#inbox" data-v="inbox">Gmail inbox <span class="count" data-c="inbox"></span></a>
+    <a href="#inbox" data-v="inbox">Inbox <span class="count" data-c="inbox"></span></a>
     <a href="#leads" data-v="leads">Leads <span class="count" data-c="leads"></span></a>
     <a href="#clients" data-v="clients">Clients <span class="count" data-c="clients"></span></a>
     <a href="#formations" data-v="formations">Formations <span class="count" data-c="formations"></span></a>
@@ -227,6 +233,7 @@ code{font-family:var(--font-data);font-size:11.5px;background:var(--sunken);padd
 </div>
 <div id="overlay"></div>
 
+<script type="application/json" id="default-templates">{"accounting": {"name": "Accounting – Pogodba o vodenju poslovnih knjig", "kind": "Accounting", "numFmt": "NN/YYYY", "source": "Pogodba_racunovodstvo.docx", "sl": {"title": "Pogodba o vodenju poslovnih knjig", "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju izvajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju naročnik\n\n# POGODBA O VODENJU POSLOVNIH KNJIG\n## Št. {{doc.number}}\n\n## I. PREDMET POGODBE\n## 1. člen\nS to pogodbo se pogodbeni stranki sporazumeta, da izvajalec za naročnika vodi poslovne knjige in opravlja druge dogovorjene storitve.\n\n## 2. člen (obseg storitev)\nObseg storitev, ki so vključene v mesečni pavšal, obsega:\n- {{f.included}}\n\n## 3. člen (Dodatne storitve in poseben obračun)\nNaslednje storitve niso vključene v osnovni pavšal in so predmet posebnega obračuna:\n- {{f.extra}}\n\n## II. OBVEZNOSTI IN ODGOVORNOST\n## 4. člen\nIzvajalec se zavezuje, da bo storitve opravljal strokovno in v skladu z veljavno zakonodajo. Naročnikove podatke bo obravnaval kot poslovno tajnost.\n\n## 5. člen\nNaročnik se zavezuje, da bo izvajalcu pravočasno in redno dostavljal verodostojno knjigovodsko dokumentacijo. Podatke za obračun plač mora naročnik posredovati najpozneje do {{f.payrollDay}} v mesecu za pretekli mesec.\n\n## III. CENA IN PLAČILNI POGOJI\n## 6. člen\nCena za osnovni obseg storitev se določi v skladu z računovodsko tarifo oziroma po dogovorjenem mesečnem pavšalu. V ceni ni vštet DDV.\n?f.fee Dogovorjeni mesečni pavšal znaša {{f.fee}} EUR brez DDV.\n\n## 7. člen\nNaročnik se zaveže račun izvajalca poravnati v roku {{f.payDays}} dni od datuma izstavitve. V primeru zamude se obračunajo zakonite zamudne obresti.\n\n## IV. ODPOVED POGODBE IN PREHOD\n## 8. člen\nOdpovedni rok pri sporazumni prekinitvi ne more biti daljši od enega meseca. Izvajalec lahko enostransko odpove pogodbo, če naročnik dvakrat zaporedoma ne poravna svojih obveznosti.\n\n## 9. člen (Stroški izpisov ob prehodu)\nV primeru odpovedi pogodbe in prehoda k drugemu izvajalcu storitev si izvajalec pridržuje pravico zaračunati pripravo izpisov poslovnih knjig in prenos dokumentacije v višini enega mesečnega pavšala. Izvajalec izroči dokumentacijo v roku 5 dni od prejema plačila vseh obveznosti.\n\n## V. KONČNE DOLOČBE\n## 10. člen\nPogodba stopi v veljavo z dnem podpisa in se uporablja od {{f.startDate}} dalje.\n\nV Rogatcu, dne {{doc.date}}\n\n|| IZVAJALEC: __________________________ \\\\ {{firm.name}} || NAROČNIK: __________________________ \\\\ {{client.contact}}"}, "en": {"title": "Bookkeeping Services Agreement", "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Provider\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Client\n\n# BOOKKEEPING SERVICES AGREEMENT\n## No. {{doc.number}}\n\n## I. SUBJECT OF THE AGREEMENT\n## Article 1\nBy this Agreement the parties agree that the Provider will keep the Client's books of account and perform other agreed services.\n\n## Article 2 (Scope of services)\nThe services included in the monthly flat fee comprise:\n- {{f.included}}\n\n## Article 3 (Additional services charged separately)\nThe following services are not included in the basic flat fee and are charged separately:\n- {{f.extra}}\n\n## II. OBLIGATIONS AND LIABILITY\n## Article 4\nThe Provider undertakes to perform the services professionally and in accordance with applicable law. The Provider will treat the Client's data as a business secret.\n\n## Article 5\nThe Client undertakes to deliver authentic accounting documents to the Provider regularly and on time. The Client must provide payroll data for the previous month no later than {{f.payrollDay}} of the month.\n\n## III. PRICE AND PAYMENT TERMS\n## Article 6\nThe price for the basic scope of services is determined in accordance with the accounting tariff or the agreed monthly flat fee. VAT is not included in the price.\n?f.fee The agreed monthly flat fee is EUR {{f.fee}} excluding VAT.\n\n## Article 7\nThe Client undertakes to pay the Provider's invoices within {{f.payDays}} days of the invoice date. Statutory default interest is charged on late payments.\n\n## IV. TERMINATION AND HANDOVER\n## Article 8\nThe notice period for termination by mutual agreement may not exceed one month. The Provider may terminate the Agreement unilaterally if the Client fails to settle its obligations twice in a row.\n\n## Article 9 (Costs of ledger reports on transfer)\nIf the Agreement is terminated and the Client moves to another service provider, the Provider reserves the right to charge for preparing ledger reports and transferring the documentation in the amount of one monthly flat fee. The Provider will hand over the documentation within 5 days of receiving payment of all outstanding obligations.\n\n## V. FINAL PROVISIONS\n## Article 10\nThis Agreement enters into force on the date of signature and applies from {{f.startDate}}.\n\nRogatec, {{doc.date}}\n\n|| PROVIDER: __________________________ \\\\ {{firm.name}} || CLIENT: __________________________ \\\\ {{client.contact}}"}, "fields": [{"k": "firmRep", "l": "Provider represented by", "t": "text", "dsl": "direktorica Klara Boršič", "den": "director Klara Boršič"}, {"k": "included", "l": "Services included in the monthly flat fee", "t": "list", "dsl": "Obračun plač in nadomestil plač.\nObračun prispevkov za socialno varnost in poročanje institucijam (ZPIZ, DURS/FURS).\nObračun DDV ter vodenje knjig prejetih in izdanih računov.\nSvetovanje v obsegu do 1 ure na mesec.", "den": "Calculation of salaries and salary compensation.\nCalculation of social security contributions and reporting to institutions (ZPIZ, FURS).\nVAT calculation and keeping the books of received and issued invoices.\nAdvice of up to 1 hour per month."}, {"k": "extra", "l": "Additional services charged separately", "t": "list", "dsl": "Letno poročilo: Sestava letnih računovodskih izkazov (bilanca stanja, izkaz uspeha) in davčne bilance.\nSvetovanje: Kakršnokoli svetovanje, ki presega osnovni obseg 1 ure na mesec.\nPoročila za banke: Podrobnejša priprava poročil in zbiranje podatkov za finančne institucije.\nDelovna dovoljenja: Postopki pridobivanja delovnih dovoljenj za tujce.\nKadrovske storitve: Priprava pogodb o zaposlitvi ter prijave in odjave delavcev v socialna zavarovanja.", "den": "Annual report: preparation of the annual financial statements (balance sheet, income statement) and the tax return.\nAdvice: any advice beyond the basic 1 hour per month.\nReports for banks: detailed preparation of reports and collection of data for financial institutions.\nWork permits: procedures for obtaining work permits for foreign nationals.\nHR services: preparation of employment contracts and registration and deregistration of employees for social insurance."}, {"k": "payrollDay", "l": "Payroll data due by", "t": "text", "dsl": "tretjega delovnega dne", "den": "the third working day"}, {"k": "fee", "l": "Monthly flat fee in EUR (optional – adds a sentence to Article 6)", "t": "number", "dsl": "=client.fee", "den": "=client.fee"}, {"k": "payDays", "l": "Invoice payment term (days)", "t": "number", "dsl": "10", "den": "10"}, {"k": "startDate", "l": "Applies from", "t": "date", "dsl": "=today", "den": "=today"}]}, "rental": {"name": "Rental – Najem poslovnega prostora / sedež", "kind": "Rental", "numFmt": "NAJ-NN/YYYY", "source": "Starter draft – replace with your sample", "sl": {"title": "Pogodba o najemu poslovnega prostora", "body": "# POGODBA O NAJEMU POSLOVNEGA PROSTORA\n## Št. {{doc.number}}\n\nki jo skleneta\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju najemodajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju najemnik\n\n## 1. člen (predmet najema)\nNajemodajalec oddaja najemniku v najem poslovni prostor na naslovu {{f.premises}} v izmeri {{f.area}} m² (v nadaljevanju: poslovni prostor).\nNajemnik bo poslovni prostor uporabljal za {{f.purpose}}.\n\n## 2. člen (poslovni naslov in sedež)\nNajemodajalec soglaša, da najemnik naslov poslovnega prostora uporablja kot poslovni naslov oziroma sedež in ga vpiše v sodni oziroma poslovni register. Ta pogodba velja kot pisno soglasje lastnika za vpis poslovnega naslova.\nOb prenehanju najema mora najemnik v 30 dneh vložiti predlog za spremembo poslovnega naslova oziroma sedeža.\n\n## 3. člen (najemnina in stroški)\nMesečna najemnina znaša {{f.rent}} EUR.\n?f.rentVat {{f.rentVat}}\nNajemnik plača najemnino na podlagi računa najemodajalca do {{f.payDay}}. dne v mesecu za tekoči mesec. V primeru zamude se obračunajo zakonite zamudne obresti.\n{{f.costs}}\n?f.deposit Najemnik ob podpisu pogodbe plača varščino v višini {{f.deposit}} EUR, ki mu jo najemodajalec ob prenehanju najema vrne, zmanjšano za morebitne neporavnane obveznosti.\n\n## 4. člen (prejemanje pošte)\nNajemodajalec bo za najemnika sprejemal pošto, ki prispe na naslov poslovnega prostora, in ga o prejeti pošti obveščal {{f.mail}}.\n\n## 5. člen (obveznosti najemnika)\nNajemnik bo poslovni prostor uporabljal skrbno in v skladu z namenom najema. Brez pisnega soglasja najemodajalca ga ne bo oddajal v podnajem in v njem ne bo izvajal sprememb. Ob prenehanju najema ga bo vrnil v stanju, v kakršnem ga je prejel, upoštevaje običajno rabo.\n\n## 6. člen (trajanje in odpoved)\nPogodba je sklenjena za {{f.duration}} in se uporablja od {{f.startDate}} dalje. Vsaka pogodbena stranka jo lahko pisno odpove z odpovednim rokom {{f.notice}}.\nNajemodajalec lahko pogodbo odpove brez odpovednega roka, če najemnik dva meseca zaporedoma ne plača najemnine.\n\n## 7. člen (končne določbe)\nZa vprašanja, ki jih ta pogodba ne ureja, se uporabljajo določbe Obligacijskega zakonika. Morebitne spore bosta stranki reševali sporazumno, sicer je pristojno stvarno pristojno sodišče po sedežu najemodajalca.\nPogodba stopi v veljavo z dnem podpisa obeh strank in je sestavljena v dveh enakih izvodih, od katerih prejme vsaka stranka po enega.\n\nV Rogatcu, dne {{doc.date}}\n\n|| NAJEMODAJALEC: __________________________ \\\\ {{firm.name}} || NAJEMNIK: __________________________ \\\\ {{client.contact}}"}, "en": {"title": "Business Premises Lease Agreement", "body": "# BUSINESS PREMISES LEASE AGREEMENT\n## No. {{doc.number}}\n\nconcluded between\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Landlord\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Tenant\n\n## Article 1 (Premises)\nThe Landlord leases to the Tenant the business premises at {{f.premises}}, measuring {{f.area}} m² (the Premises).\nThe Tenant will use the Premises for {{f.purpose}}.\n\n## Article 2 (Business address and registered office)\nThe Landlord agrees that the Tenant may use the address of the Premises as its business address or registered office and register it in the court or business register. This Agreement serves as the owner's written consent to the registration of the business address.\nWhen the lease ends, the Tenant must apply to change its business address or registered office within 30 days.\n\n## Article 3 (Rent and costs)\nThe monthly rent is EUR {{f.rent}}.\n?f.rentVat {{f.rentVat}}\nThe Tenant pays the rent on the basis of the Landlord's invoice by the {{f.payDay}}th day of each month for the current month. Statutory default interest is charged on late payments.\n{{f.costs}}\n?f.deposit On signing this Agreement the Tenant pays a deposit of EUR {{f.deposit}}, which the Landlord returns when the lease ends, less any unpaid amounts.\n\n## Article 4 (Receiving mail)\nThe Landlord will receive mail delivered to the address of the Premises on behalf of the Tenant and notify the Tenant of mail received {{f.mail}}.\n\n## Article 5 (Tenant's obligations)\nThe Tenant will use the Premises with care and only for the agreed purpose. Without the Landlord's written consent the Tenant will not sublet the Premises or make alterations. When the lease ends, the Tenant will return the Premises in the condition in which it received them, allowing for normal wear and tear.\n\n## Article 6 (Term and termination)\nThis Agreement is concluded for {{f.duration}} and applies from {{f.startDate}}. Either party may terminate it in writing with {{f.notice}}' notice.\nThe Landlord may terminate the Agreement without notice if the Tenant fails to pay the rent for two consecutive months.\n\n## Article 7 (Final provisions)\nMatters not regulated by this Agreement are governed by the Slovenian Obligations Code. The parties will try to resolve disputes amicably; failing that, the competent court at the Landlord's registered office has jurisdiction.\nThis Agreement enters into force when signed by both parties and is made in two identical copies, one for each party.\n\nRogatec, {{doc.date}}\n\n|| LANDLORD: __________________________ \\\\ {{firm.name}} || TENANT: __________________________ \\\\ {{client.contact}}"}, "fields": [{"k": "firmRep", "l": "Landlord represented by", "t": "text", "dsl": "direktorica Klara Boršič", "den": "director Klara Boršič"}, {"k": "premises", "l": "Address of the premises", "t": "text", "dsl": "Celjska cesta 47, 3252 Rogatec", "den": "Celjska cesta 47, 3252 Rogatec, Slovenia"}, {"k": "area", "l": "Area (m²)", "t": "number", "dsl": "", "den": ""}, {"k": "purpose", "l": "Use of the premises", "t": "text", "dsl": "opravljanje dejavnosti in kot poslovni naslov (sedež) najemnika", "den": "carrying on the Tenant's business and as the Tenant's business address (registered office)"}, {"k": "rent", "l": "Monthly rent (EUR)", "t": "number", "dsl": "", "den": ""}, {"k": "rentVat", "l": "VAT sentence (optional)", "t": "text", "dsl": "", "den": ""}, {"k": "payDay", "l": "Rent due by day of month", "t": "number", "dsl": "8", "den": "8"}, {"k": "costs", "l": "Running costs", "t": "textarea", "dsl": "Obratovalni stroški (elektrika, ogrevanje, voda in čiščenje skupnih prostorov) so vključeni v najemnino.", "den": "Running costs (electricity, heating, water and cleaning of common areas) are included in the rent."}, {"k": "deposit", "l": "Deposit (EUR, optional)", "t": "number", "dsl": "", "den": ""}, {"k": "mail", "l": "How mail is notified", "t": "text", "dsl": "po elektronski pošti", "den": "by email"}, {"k": "duration", "l": "Term", "t": "text", "dsl": "nedoločen čas", "den": "an indefinite period"}, {"k": "startDate", "l": "Applies from", "t": "date", "dsl": "=today", "den": "=today"}, {"k": "notice", "l": "Notice period", "t": "text", "dsl": "3 (treh) mesecev", "den": "3 (three) months"}]}}</script>
 <script>
 (() => {
 // ---------- helpers ----------
@@ -399,11 +406,87 @@ async function remove(coll, id){
 async function saveFirm(){ if (db) await db.collection("settings").doc("firm").set(JSON.parse(JSON.stringify(firm))); render(); }
 function setSync(t){ document.getElementById("sync").textContent = t; }
 
+// ---------- local (browser) storage: used when the page is opened outside claude.ai ----------
+const LS_KEY = "practicedesk:v1";
+function localDb(){
+  let data = {};
+  const read = () => { try { data = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch(e){ data = {}; } };
+  read();
+  const collSubs = {}, docSubs = {};
+  const persist = () => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+    catch(e){ setSync("Not saved — browser storage is full or blocked"); throw {code:"storage_full", message:"browser storage is full or blocked"}; }
+  };
+  const snap = coll => ({docs:Object.entries(data[coll]||{}).map(([id,v])=>({id, data:()=>structuredClone(v)})), metadata:{fromCache:false}});
+  const dsnap = (coll,id) => { const v = (data[coll]||{})[id]; return {exists:v!==undefined, data:()=>structuredClone(v)}; };
+  const fire = coll => { (collSubs[coll]||[]).forEach(f=>f(snap(coll))); Object.entries(docSubs).forEach(([k,fs])=>{ const [c,id] = k.split("/"); if (c===coll) fs.forEach(f=>f(dsnap(c,id))); }); };
+  const fireAll = () => { const cs = new Set([...Object.keys(collSubs), ...Object.keys(docSubs).map(k=>k.split("/")[0])]); cs.forEach(fire); };
+  window.addEventListener("storage", e => { if (e.key===LS_KEY){ read(); fireAll(); } });
+  return {
+    local:true,
+    collection: coll => ({
+      doc: id => ({
+        set: async body => { (data[coll] ||= {})[id] = JSON.parse(JSON.stringify(body)); persist(); fire(coll); },
+        delete: async () => { if (data[coll]) delete data[coll][id]; persist(); fire(coll); },
+        onSnapshot: (fn) => { (docSubs[coll+"/"+id] ||= []).push(fn); fn(dsnap(coll,id)); }
+      }),
+      onSnapshot: (fn) => { (collSubs[coll] ||= []).push(fn); fn(snap(coll)); }
+    }),
+    dump: () => structuredClone(data),
+    load: (d, merge) => { data = merge ? Object.fromEntries([...new Set([...Object.keys(data), ...Object.keys(d)])].map(c=>[c, {...(data[c]||{}), ...(d[c]||{})}])) : d; persist(); fireAll(); }
+  };
+}
+function seedTemplates(){
+  if (!db || !db.local) return;
+  try { if (localStorage.getItem(LS_KEY+":seeded")) return; } catch(e){ return; }
+  if (!state.templates.length) {
+    try { const d = JSON.parse(document.getElementById("default-templates").textContent); for (const [id, t] of Object.entries(d)) db.collection("templates").doc(id).set({...t, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()}); } catch(e){}
+  }
+  try { localStorage.setItem(LS_KEY+":seeded", "1"); } catch(e){}
+}
+// browser download, used when the claude.ai downloads capability isn't there
+const browserDownloads = { save: async ({filename, data}) => {
+  const blob = data instanceof Blob ? data : new Blob([data], {type: /\.csv$/i.test(filename) ? "text/csv;charset=utf-8" : /\.json$/i.test(filename) ? "application/json" : "application/octet-stream"});
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 30000);
+}};
+function storageOk(){ try { const k = LS_KEY+":t"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; } catch(e){ return false; } }
+function exportBackup(){
+  const data = {};
+  for (const c of COLLS) data[c] = Object.fromEntries(state[c].map(({id,...r})=>[id, r]));
+  data.settings = {firm: JSON.parse(JSON.stringify(firm))};
+  return JSON.stringify({app:"practice-desk-crm", version:1, exportedAt:new Date().toISOString(), data}, null, 1);
+}
+async function importBackup(text, name){
+  let j; try { j = JSON.parse(text); } catch(e){ toast("That file isn't a Practice Desk backup"); return; }
+  const d = j && j.data; if (!d || typeof d!=="object") { toast("That file isn't a Practice Desk backup"); return; }
+  const n = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
+  const replace = confirm(`Restore ${n} records from ${name}?\n\nOK = replace everything currently in Practice Desk with the backup.\nCancel = choose whether to merge instead.`);
+  if (!replace && !confirm("Merge the backup into your current records instead? Records with the same id are overwritten by the backup.")) return;
+  try {
+    if (db && db.local) { db.load(d, !replace); }
+    else if (db) {
+      if (replace) for (const c of COLLS) for (const r of state[c]) if (!(d[c]||{})[r.id]) await db.collection(c).doc(r.id).delete();
+      for (const c of [...COLLS, "settings"]) for (const [id, r] of Object.entries(d[c]||{})) await db.collection(c).doc(id).set(r);
+    } else { toast("Storage isn't available"); return; }
+    toast(`Restored ${n} records`);
+  } catch(e){ toast("Restore failed: " + (e.message||e.code||e)); }
+}
+
 async function boot(){
   render();
   const c = window.claude;
-  if (!c || !c.use) { mode = "local"; setSync("Not saved — open in Claude"); render(); return; }
-  c.use("downloads").then(d => { downloads = d; }).catch(()=>{});
+  if (!c || !c.use) {
+    downloads = browserDownloads;
+    if (!storageOk()) { mode = "local"; setSync("Not saved — browser storage is blocked"); render(); return; }
+    db = localDb(); mode = "browser"; setSync("Saved in this browser");
+    for (const coll of COLLS) db.collection(coll).onSnapshot(snap => { state[coll] = snap.docs.map(d => ({id:d.id, ...d.data()})); render(); });
+    db.collection("settings").doc("firm").onSnapshot(s => { if (setupDirty) return; if (s.exists) { firm = {...structuredClone(DEFAULT_FIRM), ...s.data()}; firm.prices = {...DEFAULT_FIRM.prices, ...(s.data().prices||{})}; } if (view==="setup" && document.activeElement && document.activeElement.closest && document.activeElement.closest("#firmform")) return; render(); });
+    seedTemplates();
+    return;
+  }
+  downloads = browserDownloads; c.use("downloads").then(d => { if (d) downloads = d; }).catch(()=>{});
   c.use("sample").then(s => { sample = s; }).catch(()=>{});
   c.use("mcp").then(m => { mcp = m; if (m) m.listTools().then(r => { fileArgs = !!r.fileArgs; }).catch(()=>{}); render(); }).catch(()=>{});
   db = await c.use("db").catch(()=>null);
@@ -479,7 +562,7 @@ async function markHandled(threadId, status, refId){ try { await save("inbox", {
 async function fromMail(item, as){
   toast("Reading the email…");
   let body = "";
-  try {
+  if (item.pasted) body = item.snippet; else try {
     const t = await gmail("get_thread", {threadId:item.id, messageFormat:"PLAIN_TEXT"});
     const m = (t.messages||[])[0] || {};
     body = String(m.plaintextBody || m.plaintext_body || m.snippet || "").trim();
@@ -491,13 +574,13 @@ async function fromMail(item, as){
       if (r && typeof r==="object") ex = {...ex, ...r};
     } catch(e){}
   }
-  const link = {gmailThreadId:item.id, gmailMsgId:item.msgId, gmailUrl:item.url};
+  const link = item.pasted ? {} : {gmailThreadId:item.id, gmailMsgId:item.msgId, gmailUrl:item.url};
   const text = (ex.summary? ex.summary+"\n\n":"") + body.slice(0,2000);
   if (as==="lead") {
     const isForm = /povpra|obrazec|contact form|inquiry|enquiry/i.test(item.subject);
-    openDrawer("leads", newRecord("leads", {...link, name:ex.name||item.name||item.email, company:ex.company||"", email:item.email, phone:ex.phone||"", services:(ex.services||[]).filter(s=>SERVICES.includes(s)), employees:ex.employees||"", lang:ex.lang==="en"?"en":"sl", source:isForm?"Website form":"Email", nextDate:TODAY(), nextAction:"Reply to enquiry", notes:text}), true, (rec)=>markHandled(item.id,"lead",rec.id));
+    openDrawer("leads", newRecord("leads", {...link, name:ex.name||item.name||item.email, company:ex.company||"", email:item.email, phone:ex.phone||"", services:(ex.services||[]).filter(s=>SERVICES.includes(s)), employees:ex.employees||"", lang:ex.lang==="en"?"en":"sl", source:isForm?"Website form":"Email", nextDate:TODAY(), nextAction:"Reply to enquiry", notes:text}), true, item.pasted ? null : (rec)=>markHandled(item.id,"lead",rec.id));
   } else {
-    openDrawer("requests", newRecord("requests", {...link, subject:item.subject||"(no subject)", clientId:item.clientId, from:item.from, received:item.date||TODAY(), notes:text}), true, (rec)=>markHandled(item.id,"request",rec.id));
+    openDrawer("requests", newRecord("requests", {...link, subject:item.subject||"(no subject)", clientId:item.clientId, from:item.from, received:item.date||TODAY(), notes:text}), true, item.pasted ? null : (rec)=>markHandled(item.id,"request",rec.id));
   }
 }
 
@@ -519,8 +602,9 @@ function render(){
   if (focus !== null) { const q = document.getElementById("q"); if (q){ q.focus(); q.setSelectionRange(focus,focus);} }
 }
 function banner(){
-  if (mode==="local") return `<div class="banner">Changes on this screen aren't being saved. Open this page in Claude while signed in to keep your records.</div>`;
+  if (mode==="local") return `<div class="banner">Changes on this screen aren't being saved because this browser blocks local storage (private window or blocked site data). Open the page in a normal window, or in Claude while signed in.</div>`;
   let out = "";
+  if (mode==="browser" && view==="overview") out += `<div class="banner" data-tone="info">Your records are saved in this browser on this computer only. Download a backup regularly under Firm &amp; accounting → Backup. <a class="btn small" href="#setup">Backup</a></div>`;
   if (view==="overview" && !firm.name) out += `<div class="banner" data-tone="info">Add your firm's details and price list so quotes and agreements fill in automatically. <a class="btn small" href="#setup">Set up firm details</a></div>`;
   const ex = Object.values(state).flat().filter(r=>r.example).length;
   if (ex && view==="overview") out += `<div class="banner" data-tone="info">${ex} example records are loaded so you can see how things fit together. <button class="btn small" data-act="clear-examples">Remove examples</button></div>`;
@@ -621,7 +705,7 @@ function mailRow(i){
 function vInbox(){
   const top = header("Gmail inbox", "New enquiries from your website form and your inbox, ready to turn into leads, plus client emails to log as requests. Emails you've handled won't come back.", null,
     `<button class="btn primary" data-act="scan" ${scan.status==="loading"?"disabled":""}>${scan.status==="loading"?'<span class="spin"></span> Checking':"Check Gmail now"}</button><a class="btn" href="#setup">Search settings</a>`);
-  if (!mcp && mode!=="connecting") return top + `<div class="banner">${esc(gmailErr({code:"no_mcp"}))}</div>`;
+  if (!mcp && mode!=="connecting") return header("Inbox", "Gmail can only be read when this page is open on claude.ai with the Gmail connector. Here, paste an enquiry or client email to turn it into a lead or a request.", null) + pasteMailForm();
   if (scan.status==="loading") return top + `<div class="empty"><b><span class="spin"></span> ${esc(scan.msg)}</b>This takes a few seconds.</div>`;
   if (scan.status==="error") return top + `<div class="banner" data-tone="bad">${esc(scan.msg)}</div>`;
   if (scan.status==="idle") return top + `<div class="empty"><b>Check your Gmail for new enquiries</b>Practice Desk reads emails matching your website-form search and the last 14 days of your inbox (skipping promotions and newsletters), and sorts out which look like new clients.</div>`;
@@ -633,6 +717,14 @@ function vInbox(){
       : `<div class="empty"><b>No new emails to handle</b>Checked ${scan.at?scan.at.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):""}. Everything matching your searches has been dealt with.</div>`);
 }
 
+function pasteMailForm(){
+  return `<section class="panel"><h2>Add from an email</h2><form id="pasteform" class="setgrid" style="grid-template-columns:1fr 1fr">
+    <div class="f"><label for="pm_from">From (name and/or email)</label><input id="pm_from" name="from" placeholder="Ana Novak <ana@podjetje.si>"></div>
+    <div class="f"><label for="pm_subject">Subject</label><input id="pm_subject" name="subject"></div>
+    <div class="f" style="grid-column:1/-1"><label for="pm_body">Message</label><textarea id="pm_body" name="body" rows="8" placeholder="Paste the email text here"></textarea></div>
+    <div class="tools" style="grid-column:1/-1"><button type="submit" class="btn primary" name="as" value="lead">Create lead</button><button type="submit" class="btn" name="as" value="request">Log request</button></div>
+  </form></section>`;
+}
 function vLeads(){
   const ls = state.leads.filter(r=>match(r,["name","company","email","source","nextAction"]));
   const lanes = STAGES.map(([s,label],i)=>{
@@ -844,6 +936,14 @@ function vSetup(){
     </div>
     ${imp?`<div class="banner" data-tone="info" style="margin-top:12px">Found ${imp.rows.length} partners in ${esc(imp.file)}: ${imp.newRows.length} new, ${imp.upd.length} matching existing clients by tax number or name. Columns recognised: ${esc(Object.keys(imp.map).join(", ")||"none")}.
       <button class="btn small primary" data-act="imp-apply" ${imp.rows.length?"":"disabled"}>Import ${imp.newRows.length} new and update ${imp.upd.length}</button><button class="btn small" data-act="imp-cancel">Cancel</button></div>`:""}
+  </section>
+  <section class="panel" style="margin-top:20px"><h2>Backup</h2>
+    <p class="sub" style="margin:0 0 12px">${mode==="browser"?"Your records live in this browser only. Clearing browser data deletes them, and other computers don't see them. ":""}A backup is one JSON file with every lead, client, formation, AML check, request, document, template and your firm settings. Restore it here on any computer or browser to move or recover your records.</p>
+    <div class="tools">
+      <button class="btn primary" data-act="backup">Download backup</button>
+      <label class="btn" for="restorefile">Restore from backup…</label><input type="file" id="restorefile" accept=".json,application/json" hidden>
+      ${mode==="browser"?`<button class="btn" data-act="load-templates">Reload default contract templates</button>`:""}
+    </div>
   </section>`;
 }
 const csvCell = v => { v = Array.isArray(v)?v.join(", "):String(v??""); return /[";\n,]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
@@ -1417,7 +1517,7 @@ function renderComposer(){
       <div class="cprev"><div class="paper" id="paper" contenteditable="true" spellcheck="false">${docHtml(c)}</div></div>
     </div>
     <footer><span class="hint">${esc(c.msg||(c.edited?"Document edited by hand.":"PDF is attached to a Gmail draft. Nothing is sent until you press Send in Gmail."))}</span>
-      <div class="r"><button class="btn" data-act="comp-word" ${c.busy?"disabled":""}>Save Word</button><button class="btn" data-act="comp-pdf" ${c.busy?"disabled":""}>Save PDF</button><button class="btn primary" data-act="comp-draft" ${c.busy?"disabled":""}>${c.busy?'<span class="spin"></span> Working':"Create Gmail draft"}</button></div></footer></div>`;
+      <div class="r"><button class="btn" data-act="comp-word" ${c.busy?"disabled":""}>Save Word</button><button class="btn" data-act="comp-pdf" ${c.busy?"disabled":""}>Save PDF</button><button class="btn primary" data-act="comp-draft" ${c.busy?"disabled":""}>${c.busy?'<span class="spin"></span> Working':mcp?"Create Gmail draft":"Save PDF + open email"}</button></div></footer></div>`;
 }
 function refreshPaper(){ const p = document.getElementById("paper"); if (p){ p.innerHTML = docHtml(comp); comp.edited=false; } }
 async function makePdf(){
@@ -1435,8 +1535,14 @@ async function compDraft(){
   c.busy = true; c.msg = "Making the PDF…"; const paperHtml = document.getElementById("paper").innerHTML; renderComposer(); document.getElementById("paper").innerHTML = paperHtml;
   try {
     const blob = await makePdf();
-    c.msg = "Creating the Gmail draft…"; renderComposer(); document.getElementById("paper").innerHTML = paperHtml;
     const name = fileName(c);
+    let draftUrl = "", status = "Draft in Gmail";
+    if (!mcp) {
+      await downloads.save({filename:name, data:blob});
+      const a = document.createElement("a"); a.href = `mailto:${encodeURIComponent(emailOf(c.to))}?subject=${encodeURIComponent(c.subject||"")}&body=${encodeURIComponent(c.body||"")}`; document.body.appendChild(a); a.click(); a.remove();
+      status = "Sent";
+    } else {
+    c.msg = "Creating the Gmail draft…"; renderComposer(); document.getElementById("paper").innerHTML = paperHtml;
     const content = fileArgs ? {$file:{data:blob, name, type:"application/pdf"}} : await b64(blob);
     if (!fileArgs && content.length > 950000) throw new Error("The PDF is too large to attach from here. Use Save PDF and attach it in Gmail.");
     const html = esc(c.body).replace(/\n/g,"<br>");
@@ -1444,9 +1550,10 @@ async function compDraft(){
     const rec = byId(c.coll, c.id);
     if (rec && rec.gmailMsgId && c.type==="quote") input.replyToMessageId = rec.gmailMsgId;
     const d = await gmail("create_draft", input);
-    const draftUrl = d && (d.viewUrl || (d.message && d.message.viewUrl)) || "https://mail.google.com/mail/#drafts";
+    draftUrl = d && (d.viewUrl || (d.message && d.message.viewUrl)) || "https://mail.google.com/mail/#drafts";
+    }
     const oneOff = c.items.filter(i=>i.u==="once"||i.u==="year").reduce((s,i)=>s+i.q*i.p,0);
-    await save("documents", {id:uid(), type:c.type, number:c.number, lang:c.lang, refColl:c.coll, refId:c.id, party:c.party.name, email:emailOf(c.to), date:c.date, status:"Draft in Gmail", draftUrl, title:c.type==="contract"?(((byId("templates",c.tplId)||{})[c.lang]||{}).title||""):"", templateId:c.tplId||"", monthly:c.type==="quote"?monthlyOf(c.items):c.type==="agreement"?+c.fee:0, amount:c.type==="formation"?(+c.fm.fee||0):c.type==="quote"?oneOff:0});
+    await save("documents", {id:uid(), type:c.type, number:c.number, lang:c.lang, refColl:c.coll, refId:c.id, party:c.party.name, email:emailOf(c.to), date:c.date, status, draftUrl, title:c.type==="contract"?(((byId("templates",c.tplId)||{})[c.lang]||{}).title||""):"", templateId:c.tplId||"", monthly:c.type==="quote"?monthlyOf(c.items):c.type==="agreement"?+c.fee:0, amount:c.type==="formation"?(+c.fm.fee||0):c.type==="quote"?oneOff:0});
     if (c.fm && rec) {
       const upd = {...rec, packageName:c.fm.packageName, fee:c.fm.fee, advancePct:c.fm.advancePct, taxOwners:c.fm.taxOwners, shareholders:c.fm.shareholders, directors:c.fm.directors, weeksMin:c.fm.weeksMin, weeksMax:c.fm.weeksMax, proposalDate:c.proposalDate||rec.proposalDate||""};
       if (c.type==="docrequest") { upd.docs = structuredClone(rec.docs||{}); ANNEX.forEach(([k])=>{ const d = upd.docs[k]||{}; if ((d.status||"Missing")==="Missing") upd.docs[k] = {...d, status:"Requested"}; }); }
@@ -1455,6 +1562,7 @@ async function compDraft(){
     if (c.type==="quote" && c.coll==="leads" && rec && ["new","contacted","meeting"].includes(rec.stage)) await save("leads", {...rec, stage:"proposal", fee: monthlyOf(c.items)||rec.fee, nextDate:addDays(TODAY(),7), nextAction:"Follow up on quote "+c.number});
     if (c.type==="agreement" && rec && c.coll==="clients" && +c.fee && !rec.fee) await save("clients", {...rec, fee:+c.fee});
     comp = null; renderDrawer();
+    if (!mcp) { toast(`PDF saved as ${name}. Attach it to the email that opened in your mail app and press Send.`); return; }
     toast("Draft created in Gmail. Review it there and press Send.");
     if (draftUrl) setTimeout(()=>{ const t = document.querySelector(".toast"); if (t) t.innerHTML = `Draft created. <a href="${esc(draftUrl)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Open in Gmail</a>`; }, 50);
   } catch(e){
@@ -1542,6 +1650,8 @@ async function act(el){
   else if (a==="delete-yes"){ const {coll:c,rec} = drawer; drawer=null; renderDrawer(); try { await remove(c, rec.id); toast("Deleted"); } catch(e){ toast("Couldn't delete: "+(e.code||e)); } }
   else if (a==="clear-examples"){ for (const c of COLLS) for (const r of state[c].filter(x=>x.example)) await remove(c, r.id).catch(()=>{}); toast("Examples removed"); }
   else if (a==="export"){ offer(`${coll}-${TODAY()}.csv`, toCsv(coll)); }
+  else if (a==="backup"){ offer(`practice-desk-backup-${TODAY()}.json`, new Blob([exportBackup()], {type:"application/json"})); }
+  else if (a==="load-templates"){ try { const d = JSON.parse(document.getElementById("default-templates").textContent); for (const [tid, t] of Object.entries(d)) await save("templates", {...t, id:tid}); toast("Default templates loaded"); } catch(e){ toast("Couldn't load templates"); } }
   else if (a==="acc-partners"){ offer(`partnerji-${TODAY()}.csv`, partnersCsv()); }
   else if (a==="acc-billing"){ offer(`obracun-${TODAY().slice(0,7)}.csv`, billingCsv()); }
   else if (a==="imp-apply"){ applyImport(); }
@@ -1605,10 +1715,20 @@ document.addEventListener("change", e => {
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
   if (e.target.id==="ct_client"){ ctClient = e.target.value; render(); }
   if (e.target.dataset.docstatus){ const d = byId("documents", e.target.dataset.docstatus); if (d) save("documents", {...d, status:e.target.value}).then(()=>toast("Status updated")).catch(err=>toast("Couldn't save: "+(err.code||err))); }
+  if (e.target.id==="restorefile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>importBackup(t, f.name)); e.target.value=""; }
   if (e.target.id==="impfile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>prepImport(t, f.name)); e.target.value=""; }
 });
 document.addEventListener("submit", async e => {
   e.preventDefault();
+  if (e.target.id==="pasteform"){
+    const fd = new FormData(e.target), as = (e.submitter && e.submitter.value) || "lead";
+    const from = String(fd.get("from")||"").trim(), subject = String(fd.get("subject")||"").trim(), body = String(fd.get("body")||"").trim();
+    if (!from && !body){ toast("Paste the sender or the message first"); return; }
+    const em = emailOf(from), cl = em && state.clients.find(c=>(c.email||"").toLowerCase()===em);
+    const item = {id:"", from, email:em, name:nameOf(from) || (em ? "" : from), subject, snippet:body, date:TODAY(), clientId:cl?cl.id:"", pasted:true};
+    e.target.reset(); fromMail(item, as);
+    return;
+  }
   if (e.target.id==="firmform"){
     readFirmForm(e.target);
     document.activeElement && document.activeElement.blur && document.activeElement.blur();
@@ -1646,3 +1766,5 @@ window.addEventListener("hashchange", route);
 route(); boot();
 })();
 </script>
+</body>
+</html>
