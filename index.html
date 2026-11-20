@@ -547,7 +547,7 @@ async function authClick(e){
   const b = e.target.closest("[data-auth]"); if (!b) return;
   const a = b.dataset.auth;
   if (a==="signout"){ await sb.auth.signOut().catch(()=>{}); location.hash = ""; location.reload(); }
-  else if (a==="retry"){ gate(); }
+  else if (a==="retry"){ if (sb) gate(); else location.reload(); }
   else if (a==="forgot"){
     const email = (document.getElementById("a_email")||{}).value || "";
     if (!emailOf(email)) { authMsg("Enter your email address first."); return; }
@@ -624,8 +624,12 @@ function startOnline(){
 const loadScript = src => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = () => rej(new Error("couldn't load " + src)); document.head.appendChild(el); });
 async function bootOnline(){
   mode = "connecting"; setSync("Connecting…"); downloads = browserDownloads;
-  try { if (!window.supabase) await loadScript("vendor/supabase.js"); }
-  catch(e){ authView("error", {msg:"The sign-in library didn't load. Check your internet connection and reload."}); return; }
+  // the library ships with the app in vendor/; a pinned copy from the jsDelivr CDN is the fallback
+  for (const src of ["vendor/supabase.js", "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"]) {
+    if (window.supabase && window.supabase.createClient) break;
+    try { await loadScript(src); } catch(e){}
+  }
+  if (!(window.supabase && window.supabase.createClient)) { authView("error", {msg:"The sign-in library didn't load. Check your internet connection, then try again."}); return; }
   sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
   sb.auth.onAuthStateChange(ev => {
     if (ev==="PASSWORD_RECOVERY") { needPassword = true; setTimeout(gate, 0); }

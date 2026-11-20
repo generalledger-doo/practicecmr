@@ -1,0 +1,107 @@
+{
+  "name": "Rental – Najem poslovnega prostora / sedež",
+  "kind": "Rental",
+  "numFmt": "NAJ-NN/YYYY",
+  "source": "Starter draft – replace with your sample",
+  "sl": {
+    "title": "Pogodba o najemu poslovnega prostora",
+    "body": "# POGODBA O NAJEMU POSLOVNEGA PROSTORA\n## Št. {{doc.number}}\n\nki jo skleneta\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju najemodajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju najemnik\n\n## 1. člen (predmet najema)\nNajemodajalec oddaja najemniku v najem poslovni prostor na naslovu {{f.premises}} v izmeri {{f.area}} m² (v nadaljevanju: poslovni prostor).\nNajemnik bo poslovni prostor uporabljal za {{f.purpose}}.\n\n## 2. člen (poslovni naslov in sedež)\nNajemodajalec soglaša, da najemnik naslov poslovnega prostora uporablja kot poslovni naslov oziroma sedež in ga vpiše v sodni oziroma poslovni register. Ta pogodba velja kot pisno soglasje lastnika za vpis poslovnega naslova.\nOb prenehanju najema mora najemnik v 30 dneh vložiti predlog za spremembo poslovnega naslova oziroma sedeža.\n\n## 3. člen (najemnina in stroški)\nMesečna najemnina znaša {{f.rent}} EUR.\n?f.rentVat {{f.rentVat}}\nNajemnik plača najemnino na podlagi računa najemodajalca do {{f.payDay}}. dne v mesecu za tekoči mesec. V primeru zamude se obračunajo zakonite zamudne obresti.\n{{f.costs}}\n?f.deposit Najemnik ob podpisu pogodbe plača varščino v višini {{f.deposit}} EUR, ki mu jo najemodajalec ob prenehanju najema vrne, zmanjšano za morebitne neporavnane obveznosti.\n\n## 4. člen (prejemanje pošte)\nNajemodajalec bo za najemnika sprejemal pošto, ki prispe na naslov poslovnega prostora, in ga o prejeti pošti obveščal {{f.mail}}.\n\n## 5. člen (obveznosti najemnika)\nNajemnik bo poslovni prostor uporabljal skrbno in v skladu z namenom najema. Brez pisnega soglasja najemodajalca ga ne bo oddajal v podnajem in v njem ne bo izvajal sprememb. Ob prenehanju najema ga bo vrnil v stanju, v kakršnem ga je prejel, upoštevaje običajno rabo.\n\n## 6. člen (trajanje in odpoved)\nPogodba je sklenjena za {{f.duration}} in se uporablja od {{f.startDate}} dalje. Vsaka pogodbena stranka jo lahko pisno odpove z odpovednim rokom {{f.notice}}.\nNajemodajalec lahko pogodbo odpove brez odpovednega roka, če najemnik dva meseca zaporedoma ne plača najemnine.\n\n## 7. člen (končne določbe)\nZa vprašanja, ki jih ta pogodba ne ureja, se uporabljajo določbe Obligacijskega zakonika. Morebitne spore bosta stranki reševali sporazumno, sicer je pristojno stvarno pristojno sodišče po sedežu najemodajalca.\nPogodba stopi v veljavo z dnem podpisa obeh strank in je sestavljena v dveh enakih izvodih, od katerih prejme vsaka stranka po enega.\n\nV Rogatcu, dne {{doc.date}}\n\n|| NAJEMODAJALEC: __________________________ \\\\ {{firm.name}} || NAJEMNIK: __________________________ \\\\ {{client.contact}}"
+  },
+  "en": {
+    "title": "Business Premises Lease Agreement",
+    "body": "# BUSINESS PREMISES LEASE AGREEMENT\n## No. {{doc.number}}\n\nconcluded between\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Landlord\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Tenant\n\n## Article 1 (Premises)\nThe Landlord leases to the Tenant the business premises at {{f.premises}}, measuring {{f.area}} m² (the Premises).\nThe Tenant will use the Premises for {{f.purpose}}.\n\n## Article 2 (Business address and registered office)\nThe Landlord agrees that the Tenant may use the address of the Premises as its business address or registered office and register it in the court or business register. This Agreement serves as the owner's written consent to the registration of the business address.\nWhen the lease ends, the Tenant must apply to change its business address or registered office within 30 days.\n\n## Article 3 (Rent and costs)\nThe monthly rent is EUR {{f.rent}}.\n?f.rentVat {{f.rentVat}}\nThe Tenant pays the rent on the basis of the Landlord's invoice by the {{f.payDay}}th day of each month for the current month. Statutory default interest is charged on late payments.\n{{f.costs}}\n?f.deposit On signing this Agreement the Tenant pays a deposit of EUR {{f.deposit}}, which the Landlord returns when the lease ends, less any unpaid amounts.\n\n## Article 4 (Receiving mail)\nThe Landlord will receive mail delivered to the address of the Premises on behalf of the Tenant and notify the Tenant of mail received {{f.mail}}.\n\n## Article 5 (Tenant's obligations)\nThe Tenant will use the Premises with care and only for the agreed purpose. Without the Landlord's written consent the Tenant will not sublet the Premises or make alterations. When the lease ends, the Tenant will return the Premises in the condition in which it received them, allowing for normal wear and tear.\n\n## Article 6 (Term and termination)\nThis Agreement is concluded for {{f.duration}} and applies from {{f.startDate}}. Either party may terminate it in writing with {{f.notice}}' notice.\nThe Landlord may terminate the Agreement without notice if the Tenant fails to pay the rent for two consecutive months.\n\n## Article 7 (Final provisions)\nMatters not regulated by this Agreement are governed by the Slovenian Obligations Code. The parties will try to resolve disputes amicably; failing that, the competent court at the Landlord's registered office has jurisdiction.\nThis Agreement enters into force when signed by both parties and is made in two identical copies, one for each party.\n\nRogatec, {{doc.date}}\n\n|| LANDLORD: __________________________ \\\\ {{firm.name}} || TENANT: __________________________ \\\\ {{client.contact}}"
+  },
+  "fields": [
+    {
+      "k": "firmRep",
+      "l": "Landlord represented by",
+      "t": "text",
+      "dsl": "direktorica Klara Boršič",
+      "den": "director Klara Boršič"
+    },
+    {
+      "k": "premises",
+      "l": "Address of the premises",
+      "t": "text",
+      "dsl": "Celjska cesta 47, 3252 Rogatec",
+      "den": "Celjska cesta 47, 3252 Rogatec, Slovenia"
+    },
+    {
+      "k": "area",
+      "l": "Area (m²)",
+      "t": "number",
+      "dsl": "",
+      "den": ""
+    },
+    {
+      "k": "purpose",
+      "l": "Use of the premises",
+      "t": "text",
+      "dsl": "opravljanje dejavnosti in kot poslovni naslov (sedež) najemnika",
+      "den": "carrying on the Tenant's business and as the Tenant's business address (registered office)"
+    },
+    {
+      "k": "rent",
+      "l": "Monthly rent (EUR)",
+      "t": "number",
+      "dsl": "",
+      "den": ""
+    },
+    {
+      "k": "rentVat",
+      "l": "VAT sentence (optional)",
+      "t": "text",
+      "dsl": "",
+      "den": ""
+    },
+    {
+      "k": "payDay",
+      "l": "Rent due by day of month",
+      "t": "number",
+      "dsl": "8",
+      "den": "8"
+    },
+    {
+      "k": "costs",
+      "l": "Running costs",
+      "t": "textarea",
+      "dsl": "Obratovalni stroški (elektrika, ogrevanje, voda in čiščenje skupnih prostorov) so vključeni v najemnino.",
+      "den": "Running costs (electricity, heating, water and cleaning of common areas) are included in the rent."
+    },
+    {
+      "k": "deposit",
+      "l": "Deposit (EUR, optional)",
+      "t": "number",
+      "dsl": "",
+      "den": ""
+    },
+    {
+      "k": "mail",
+      "l": "How mail is notified",
+      "t": "text",
+      "dsl": "po elektronski pošti",
+      "den": "by email"
+    },
+    {
+      "k": "duration",
+      "l": "Term",
+      "t": "text",
+      "dsl": "nedoločen čas",
+      "den": "an indefinite period"
+    },
+    {
+      "k": "startDate",
+      "l": "Applies from",
+      "t": "date",
+      "dsl": "=today",
+      "den": "=today"
+    },
+    {
+      "k": "notice",
+      "l": "Notice period",
+      "t": "text",
+      "dsl": "3 (treh) mesecev",
+      "den": "3 (three) months"
+    }
+  ]
+}

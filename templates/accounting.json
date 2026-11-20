@@ -1,0 +1,65 @@
+{
+  "name": "Accounting – Pogodba o vodenju poslovnih knjig",
+  "kind": "Accounting",
+  "numFmt": "NN/YYYY",
+  "source": "Pogodba_racunovodstvo.docx",
+  "sl": {
+    "title": "Pogodba o vodenju poslovnih knjig",
+    "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju izvajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju naročnik\n\n# POGODBA O VODENJU POSLOVNIH KNJIG\n## Št. {{doc.number}}\n\n## I. PREDMET POGODBE\n## 1. člen\nS to pogodbo se pogodbeni stranki sporazumeta, da izvajalec za naročnika vodi poslovne knjige in opravlja druge dogovorjene storitve.\n\n## 2. člen (obseg storitev)\nObseg storitev, ki so vključene v mesečni pavšal, obsega:\n- {{f.included}}\n\n## 3. člen (Dodatne storitve in poseben obračun)\nNaslednje storitve niso vključene v osnovni pavšal in so predmet posebnega obračuna:\n- {{f.extra}}\n\n## II. OBVEZNOSTI IN ODGOVORNOST\n## 4. člen\nIzvajalec se zavezuje, da bo storitve opravljal strokovno in v skladu z veljavno zakonodajo. Naročnikove podatke bo obravnaval kot poslovno tajnost.\n\n## 5. člen\nNaročnik se zavezuje, da bo izvajalcu pravočasno in redno dostavljal verodostojno knjigovodsko dokumentacijo. Podatke za obračun plač mora naročnik posredovati najpozneje do {{f.payrollDay}} v mesecu za pretekli mesec.\n\n## III. CENA IN PLAČILNI POGOJI\n## 6. člen\nCena za osnovni obseg storitev se določi v skladu z računovodsko tarifo oziroma po dogovorjenem mesečnem pavšalu. V ceni ni vštet DDV.\n?f.fee Dogovorjeni mesečni pavšal znaša {{f.fee}} EUR brez DDV.\n\n## 7. člen\nNaročnik se zaveže račun izvajalca poravnati v roku {{f.payDays}} dni od datuma izstavitve. V primeru zamude se obračunajo zakonite zamudne obresti.\n\n## IV. ODPOVED POGODBE IN PREHOD\n## 8. člen\nOdpovedni rok pri sporazumni prekinitvi ne more biti daljši od enega meseca. Izvajalec lahko enostransko odpove pogodbo, če naročnik dvakrat zaporedoma ne poravna svojih obveznosti.\n\n## 9. člen (Stroški izpisov ob prehodu)\nV primeru odpovedi pogodbe in prehoda k drugemu izvajalcu storitev si izvajalec pridržuje pravico zaračunati pripravo izpisov poslovnih knjig in prenos dokumentacije v višini enega mesečnega pavšala. Izvajalec izroči dokumentacijo v roku 5 dni od prejema plačila vseh obveznosti.\n\n## V. KONČNE DOLOČBE\n## 10. člen\nPogodba stopi v veljavo z dnem podpisa in se uporablja od {{f.startDate}} dalje.\n\nV Rogatcu, dne {{doc.date}}\n\n|| IZVAJALEC: __________________________ \\\\ {{firm.name}} || NAROČNIK: __________________________ \\\\ {{client.contact}}"
+  },
+  "en": {
+    "title": "Bookkeeping Services Agreement",
+    "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Provider\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Client\n\n# BOOKKEEPING SERVICES AGREEMENT\n## No. {{doc.number}}\n\n## I. SUBJECT OF THE AGREEMENT\n## Article 1\nBy this Agreement the parties agree that the Provider will keep the Client's books of account and perform other agreed services.\n\n## Article 2 (Scope of services)\nThe services included in the monthly flat fee comprise:\n- {{f.included}}\n\n## Article 3 (Additional services charged separately)\nThe following services are not included in the basic flat fee and are charged separately:\n- {{f.extra}}\n\n## II. OBLIGATIONS AND LIABILITY\n## Article 4\nThe Provider undertakes to perform the services professionally and in accordance with applicable law. The Provider will treat the Client's data as a business secret.\n\n## Article 5\nThe Client undertakes to deliver authentic accounting documents to the Provider regularly and on time. The Client must provide payroll data for the previous month no later than {{f.payrollDay}} of the month.\n\n## III. PRICE AND PAYMENT TERMS\n## Article 6\nThe price for the basic scope of services is determined in accordance with the accounting tariff or the agreed monthly flat fee. VAT is not included in the price.\n?f.fee The agreed monthly flat fee is EUR {{f.fee}} excluding VAT.\n\n## Article 7\nThe Client undertakes to pay the Provider's invoices within {{f.payDays}} days of the invoice date. Statutory default interest is charged on late payments.\n\n## IV. TERMINATION AND HANDOVER\n## Article 8\nThe notice period for termination by mutual agreement may not exceed one month. The Provider may terminate the Agreement unilaterally if the Client fails to settle its obligations twice in a row.\n\n## Article 9 (Costs of ledger reports on transfer)\nIf the Agreement is terminated and the Client moves to another service provider, the Provider reserves the right to charge for preparing ledger reports and transferring the documentation in the amount of one monthly flat fee. The Provider will hand over the documentation within 5 days of receiving payment of all outstanding obligations.\n\n## V. FINAL PROVISIONS\n## Article 10\nThis Agreement enters into force on the date of signature and applies from {{f.startDate}}.\n\nRogatec, {{doc.date}}\n\n|| PROVIDER: __________________________ \\\\ {{firm.name}} || CLIENT: __________________________ \\\\ {{client.contact}}"
+  },
+  "fields": [
+    {
+      "k": "firmRep",
+      "l": "Provider represented by",
+      "t": "text",
+      "dsl": "direktorica Klara Boršič",
+      "den": "director Klara Boršič"
+    },
+    {
+      "k": "included",
+      "l": "Services included in the monthly flat fee",
+      "t": "list",
+      "dsl": "Obračun plač in nadomestil plač.\nObračun prispevkov za socialno varnost in poročanje institucijam (ZPIZ, DURS/FURS).\nObračun DDV ter vodenje knjig prejetih in izdanih računov.\nSvetovanje v obsegu do 1 ure na mesec.",
+      "den": "Calculation of salaries and salary compensation.\nCalculation of social security contributions and reporting to institutions (ZPIZ, FURS).\nVAT calculation and keeping the books of received and issued invoices.\nAdvice of up to 1 hour per month."
+    },
+    {
+      "k": "extra",
+      "l": "Additional services charged separately",
+      "t": "list",
+      "dsl": "Letno poročilo: Sestava letnih računovodskih izkazov (bilanca stanja, izkaz uspeha) in davčne bilance.\nSvetovanje: Kakršnokoli svetovanje, ki presega osnovni obseg 1 ure na mesec.\nPoročila za banke: Podrobnejša priprava poročil in zbiranje podatkov za finančne institucije.\nDelovna dovoljenja: Postopki pridobivanja delovnih dovoljenj za tujce.\nKadrovske storitve: Priprava pogodb o zaposlitvi ter prijave in odjave delavcev v socialna zavarovanja.",
+      "den": "Annual report: preparation of the annual financial statements (balance sheet, income statement) and the tax return.\nAdvice: any advice beyond the basic 1 hour per month.\nReports for banks: detailed preparation of reports and collection of data for financial institutions.\nWork permits: procedures for obtaining work permits for foreign nationals.\nHR services: preparation of employment contracts and registration and deregistration of employees for social insurance."
+    },
+    {
+      "k": "payrollDay",
+      "l": "Payroll data due by",
+      "t": "text",
+      "dsl": "tretjega delovnega dne",
+      "den": "the third working day"
+    },
+    {
+      "k": "fee",
+      "l": "Monthly flat fee in EUR (optional – adds a sentence to Article 6)",
+      "t": "number",
+      "dsl": "=client.fee",
+      "den": "=client.fee"
+    },
+    {
+      "k": "payDays",
+      "l": "Invoice payment term (days)",
+      "t": "number",
+      "dsl": "10",
+      "den": "10"
+    },
+    {
+      "k": "startDate",
+      "l": "Applies from",
+      "t": "date",
+      "dsl": "=today",
+      "den": "=today"
+    }
+  ]
+}
