@@ -159,6 +159,12 @@ code{font-family:var(--font-data);font-size:11.5px;background:var(--sunken);padd
 .drow:first-child{border-top:0}
 .drow select,.drow input,.xrow input,.xrow select{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:5px 6px;width:100%;font-size:13px;min-width:0}
 .xrows{display:flex;flex-direction:column;gap:6px}
+th.chk,td.chk{width:36px;padding-right:0}td.chk input{width:18px;height:18px;cursor:pointer;accent-color:var(--ok)}
+tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-through;text-decoration-color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.yearpanel{margin-top:16px}.ytable{min-width:640px}.ytable th.bar,.ytable td.bar{width:22%}
+.ytable tr[data-month]{cursor:pointer}.ytable tr[data-month]:hover td{background:var(--sunken)}.ytable tr.empty td{color:var(--muted)}.ytable tr.cur td:first-child{font-weight:600}
+.ytable tfoot th{border-top:2px solid var(--line);font-weight:600;text-align:left;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg);background:var(--surface);padding:10px 14px}.ytable tfoot th.num{font-family:var(--font-data);font-size:13px}
 .work{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
 .wrow{display:grid;grid-template-columns:132px 64px 96px 88px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc desc del" "date qty unit price amt amt";gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .wrow.whead{grid-template-areas:"date qty unit price amt amt";padding:0;border:0;font-size:11.5px;color:var(--muted);font-weight:600}
@@ -359,6 +365,7 @@ const SCHEMA = {
     {k:"priority",l:"Priority",t:"select",o:["Low","Normal","High","Urgent"],d:"Normal"},
     {k:"status",l:"Status",t:"select",o:REQ_STATUS,d:"New"},
     {k:"received",l:"Received",t:"date",d:TODAY},{k:"due",l:"Due",t:"date"},
+    {k:"doneOn",l:"Done on",t:"date",show:r=>r.status==="Done"},
     {k:"assignee",l:"Assigned to"},
     {k:"work",l:"Work done (billable, excl. VAT)",t:"work",wide:1},
     {k:"billMonth",l:"Bill in month",t:"month",d:()=>TODAY().slice(0,7)},{k:"invoicedOn",l:"Invoiced on",t:"date"},
@@ -419,18 +426,18 @@ function workEditor(r){
     <div class="wfoot"><button type="button" class="btn small" data-act="work-add">+ Add row</button><span>Total <b class="mono" id="worktotal">${eur2(workTotal(r))}</b></span></div>
   </fieldset>`;
 }
-function workRows(month){
-  return state.requests.filter(r=>!r.example && reqMonth(r)===month && (r.work||[]).length).flatMap(r=>{
+function workRows(period){
+  return state.requests.filter(r=>!r.example && reqMonth(r).startsWith(period) && (r.work||[]).length).flatMap(r=>{
     const c = byId("clients", r.clientId) || {};
     return r.work.filter(w=>rowAmt(w)).map(w=>({r, c, w, client: c.name || r.from || "", amt: rowAmt(w)}));
   }).sort((a,b)=>a.client.localeCompare(b.client) || String(a.w.d).localeCompare(String(b.w.d)));
 }
 function workCsv(month){
-  const head = ["Stranka","Davčna številka","Datum","Zahteva","Opis dela","Količina","Enota","Cena brez DDV","Znesek brez DDV","Status","Zaračunano"];
+  const head = ["Mesec","Stranka","Davčna številka","Datum","Zahteva","Opis dela","Količina","Enota","Cena brez DDV","Znesek brez DDV","Status","Zaračunano"];
   const n = v => String(v).replace(".",",");
-  const rows = workRows(month).map(x=>[x.client, x.c.taxNo||"", x.w.d||"", x.r.subject||"", x.w.desc||"", n(+x.w.q||0), workUnit(x.w.u,"sl"), n(+x.w.p||0), n(x.amt), x.r.status||"", x.r.invoicedOn||""]);
-  const total = rows.reduce((a,x)=>a+parseFloat(String(x[8]).replace(",",".")),0);
-  rows.push(["SKUPAJ","","","","","","","",n(Math.round(total*100)/100),"",""]);
+  const rows = workRows(month).sort((a,b)=>reqMonth(a.r).localeCompare(reqMonth(b.r))).map(x=>[reqMonth(x.r), x.client, x.c.taxNo||"", x.w.d||"", x.r.subject||"", x.w.desc||"", n(+x.w.q||0), workUnit(x.w.u,"sl"), n(+x.w.p||0), n(x.amt), x.r.status||"", x.r.invoicedOn||""]);
+  const total = workRows(month).reduce((a,x)=>a+x.amt,0);
+  rows.push(["SKUPAJ","","","","","","","","",n(Math.round(total*100)/100),"",""]);
   return toCsvRows([head,...rows]);
 }
 
@@ -450,7 +457,7 @@ const state = Object.fromEntries(COLLS.map(c=>[c,[]]));
 let firm = structuredClone(DEFAULT_FIRM);
 let db = null, mcp = null, sample = null, downloads = null, fileArgs = false;
 let ctClient = "";
-let mode = "connecting", view = "overview", filter = {q:"",status:"open",month:""}, drawer = null, comp = null, importPreview = null, setupDirty = false;
+let mode = "connecting", view = "overview", filter = {q:"",status:"open",month:"",year:""}, drawer = null, comp = null, importPreview = null, setupDirty = false;
 const scan = {status:"idle", msg:"", items:[], at:null};
 const clientName = id => (state.clients.find(c=>c.id===id)||{}).name || "";
 const byId = (coll,id) => state[coll].find(x=>x.id===id);
@@ -879,6 +886,36 @@ function amlStatus(){
   });
 }
 
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function yearStats(y){
+  const months = MONTHS_EN.map((name,i)=>({m:`${y}-${String(i+1).padStart(2,"0")}`, name, n:0, done:0, open:0, work:0, invoiced:0}));
+  state.requests.filter(r=>!r.example && reqMonth(r).startsWith(y+"-")).forEach(r=>{
+    const row = months[+reqMonth(r).slice(5,7)-1]; if (!row) return;
+    row.n++; if (r.status==="Done") row.done++; else row.open++;
+    const w = workTotal(r); row.work += w; if (r.invoicedOn) row.invoiced += w;
+  });
+  const tot = months.reduce((a,x)=>({n:a.n+x.n, done:a.done+x.done, open:a.open+x.open, work:a.work+x.work, invoiced:a.invoiced+x.invoiced}), {n:0,done:0,open:0,work:0,invoiced:0});
+  return {months, tot};
+}
+function yearCsv(y){
+  const {months, tot} = yearStats(y), n = v => String(Math.round(v*100)/100).replace(".",",");
+  const head = ["Mesec","Zahtevki","Opravljeni","Odprti","Dodatno delo (brez DDV)","Zaračunano","Ni zaračunano"];
+  const rows = months.map(x=>[x.m, x.n, x.done, x.open, n(x.work), n(x.invoiced), n(x.work-x.invoiced)]);
+  rows.push([`SKUPAJ ${y}`, tot.n, tot.done, tot.open, n(tot.work), n(tot.invoiced), n(tot.work-tot.invoiced)]);
+  return toCsvRows([head,...rows]);
+}
+function yearPanel(){
+  const years = [...new Set([TODAY().slice(0,4), ...state.requests.map(r=>reqMonth(r).slice(0,4)).filter(Boolean)])].sort().reverse();
+  const y = filter.year || TODAY().slice(0,4), {months, tot} = yearStats(y);
+  const max = Math.max(1, ...months.map(x=>x.work)), cur = TODAY().slice(0,7);
+  const sel = `<select id="ovyear" aria-label="Year">${years.map(v=>`<option ${v===y?"selected":""}>${v}</option>`).join("")}</select>`;
+  return `<section class="panel yearpanel"><div class="head" style="margin:0 0 10px"><div><h2 style="margin:0">Requests and extra work by month</h2><p class="sub" style="margin:0">${tot.n} request${tot.n===1?"":"s"} in ${y} · extra work <b class="mono">${eur2(tot.work)}</b> excl. VAT${tot.work-tot.invoiced>0?` · not invoiced <b class="mono">${eur2(tot.work-tot.invoiced)}</b>`:""}</p></div>
+    <div class="tools">${sel}<button class="btn" data-act="year-export">Export year (CSV)</button><button class="btn" data-act="year-work-export" ${tot.work?"":"disabled"}>All work rows ${y} (CSV)</button></div></div>
+    <div class="tablewrap"><table class="ytable"><thead><tr><th>Month</th><th class="num">Requests</th><th class="num">Done</th><th class="num">Open</th><th class="num">Extra work</th><th class="bar" aria-hidden="true"></th><th class="num">Invoiced</th><th class="num">Not invoiced</th></tr></thead><tbody>
+    ${months.map(x=>`<tr data-month="${x.m}" tabindex="0" class="${x.m===cur?"cur":""} ${x.n?"":"empty"}"><td>${x.name}</td><td class="num">${x.n||"—"}</td><td class="num">${x.done||"—"}</td><td class="num">${x.open?`<span class="pill ${x.m<cur?"warn":""}">${x.open}</span>`:"—"}</td><td class="num">${x.work?eur2(x.work):"—"}</td><td class="bar"><div class="fbar"><span style="width:${x.work/max*100}%"></span></div></td><td class="num">${x.invoiced?eur2(x.invoiced):"—"}</td><td class="num">${x.work-x.invoiced>0?eur2(x.work-x.invoiced):"—"}</td></tr>`).join("")}
+    </tbody><tfoot><tr><th>Total ${y}</th><th class="num">${tot.n}</th><th class="num">${tot.done}</th><th class="num">${tot.open}</th><th class="num">${eur2(tot.work)}</th><th></th><th class="num">${eur2(tot.invoiced)}</th><th class="num">${eur2(tot.work-tot.invoiced)}</th></tr></tfoot></table></div>
+    <p class="sub" style="font-size:12px;margin:8px 0 0">Requests count in their “Bill in month”. Click a month to open it in Requests.</p></section>`;
+}
 function vOverview(){
   const pipe = state.leads.filter(l=>!["won","lost"].includes(l.stage));
   const active = state.clients.filter(c=>c.status==="Active"||c.status==="Onboarding");
@@ -937,7 +974,8 @@ function vOverview(){
         ${Object.keys(reqByType).length?`<div class="funnel">${Object.entries(reqByType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<div class="frow" style="grid-template-columns:minmax(0,1fr) 40px"><span>${esc(t)}</span><span class="n">${n}</span></div>`).join("")}</div>`:`<p class="sub">No open requests.</p>`}
       </section>
     </div>
-  </div>`;
+  </div>
+  ${yearPanel()}`;
 }
 
 function mailRow(i){
@@ -1123,14 +1161,15 @@ function vRequests(){
     </section>`;
   }
   return header("Requests", "Everything clients ask for and the extra work you do for them. Add priced rows under “Work done”, then pick a month to see and export what to bill.", "requests", search("Search requests")+msel+sel+exportBtn("requests")) + summary +
-  (rs.length?`<div class="tablewrap"><table><thead><tr><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th><th class="num">Work €</th></tr></thead><tbody>
-  ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0">
+  (rs.length?`<div class="tablewrap"><table><thead><tr><th class="chk"><span class="sr">Done</span></th><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th><th class="num">Work €</th></tr></thead><tbody>
+  ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0" class="${r.status==="Done"?"done":""}">
+    <td class="chk"><input type="checkbox" data-act="req-done" data-id="${r.id}" ${r.status==="Done"?"checked":""} aria-label="${r.status==="Done"?"Done – untick to reopen":"Mark as done"}: ${esc(r.subject)}" title="${r.status==="Done"?"Done"+(r.doneOn?" on "+fmtDate(r.doneOn):"")+" – untick to reopen":"Mark as done"}"></td>
     <td><b>${esc(r.subject)}</b>${exTag(r)}<span class="sec">${esc(r.channel||"")}${r.gmailUrl?" · from Gmail":""}</span></td>
     <td>${esc(clientName(r.clientId)||r.from||"—")}</td><td>${esc(r.type||"")}</td>
     <td><span class="pill ${pr[r.priority]||""}">${esc(r.priority||"Normal")}</span></td>
     <td><span class="pill ${st[r.status]||""}">${esc(r.status||"New")}</span></td>
     <td class="num">${fmtDate(r.received)}</td>
-    <td class="num">${r.status==="Done"?fmtDate(r.due):dueChip(daysUntil(r.due), r.due)}</td>
+    <td class="num">${r.status==="Done"?`<span class="pill ok">Done ${r.doneOn?fmtDate(r.doneOn):""}</span>`:dueChip(daysUntil(r.due), r.due)}</td>
     <td>${esc(r.assignee||"—")}</td><td class="num">${workTotal(r)?eur2(workTotal(r))+(r.invoicedOn?' <span class="pill ok" title="Invoiced">✓</span>':""):"—"}</td></tr>`).join("")}
   </tbody></table></div>`:`<div class="empty"><b>${state.requests.length?"No requests match this filter":"No requests logged"}</b>${state.requests.length?"Try “All” in the status filter.":"Log client emails from the Gmail inbox, or add calls and portal messages with “New request”."}</div>`);
 }
@@ -1920,8 +1959,14 @@ async function act(el){
   else if (a==="load-templates"){ try { const d = JSON.parse(document.getElementById("default-templates").textContent); for (const [tid, t] of Object.entries(d)) await save("templates", {...t, id:tid}); toast("Default templates loaded"); } catch(e){ toast("Couldn't load templates"); } }
   else if (a==="acc-partners"){ offer(`partnerji-${TODAY()}.csv`, partnersCsv()); }
   else if (a==="acc-billing"){ const m = (document.getElementById("billmonth")||{}).value || TODAY().slice(0,7); offer(`obracun-${m}.csv`, billingCsv(m)); }
+  else if (a==="req-done"){ const r = byId("requests", id); if (!r) return;
+    const done = r.status!=="Done";
+    try { await save("requests", done ? {...r, status:"Done", doneOn:TODAY(), statusBefore:r.status||"New"} : {...r, status:(r.statusBefore && r.statusBefore!=="Done") ? r.statusBefore : "In progress", doneOn:""});
+      toast(done ? `Done: ${r.subject}` : `Reopened: ${r.subject}`); } catch(err){ toast("Couldn't save: "+(err.code||err)); } }
   else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
+  else if (a==="year-export"){ const y = filter.year || TODAY().slice(0,4); offer(`zahtevki-${y}.csv`, yearCsv(y)); }
+  else if (a==="year-work-export"){ const y = filter.year || TODAY().slice(0,4); offer(`dodatno-delo-${y}.csv`, workCsv(y)); }
   else if (a==="work-export"){ const m = filter.month || prevMonth(); if (!workRows(m).length){ toast(`No priced work in ${monthLabel(m)}`); return; } offer(`dodatno-delo-${m}.csv`, workCsv(m)); }
   else if (a==="work-invoiced"){ const m = filter.month; const rs = state.requests.filter(r=>reqMonth(r)===m && workTotal(r) && !r.invoicedOn);
     if (!rs.length){ toast("Nothing left to mark as invoiced"); return; }
@@ -1932,6 +1977,7 @@ async function act(el){
 }
 document.addEventListener("click", e => {
   const go = e.target.closest("[data-go]"); if (go){ location.hash = go.dataset.go; return; }
+  const mo = e.target.closest("tr[data-month]"); if (mo){ filter.month = mo.dataset.month; filter.status = "all"; location.hash = "requests"; return; }
   const el = e.target.closest("[data-act]"); if (!el) return;
   if (["stage","convert","compose"].includes(el.dataset.act)) e.stopPropagation();
   e.preventDefault(); act(el);
@@ -1992,6 +2038,8 @@ document.addEventListener("change", e => {
     return;
   }
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
+  if (e.target.id==="f_status" && drawer && drawer.coll==="requests"){ readForm(); renderDrawer(); }
+  if (e.target.id==="ovyear"){ filter.year = e.target.value; render(); }
   if (e.target.id==="rmonth"){ filter.month = e.target.value; if (filter.month) filter.status = "all"; render(); }
   if (e.target.id==="ct_client"){ ctClient = e.target.value; render(); }
   if (e.target.dataset.docstatus){ const d = byId("documents", e.target.dataset.docstatus); if (d) save("documents", {...d, status:e.target.value}).then(()=>toast("Status updated")).catch(err=>toast("Couldn't save: "+(err.code||err))); }
@@ -2040,6 +2088,8 @@ document.addEventListener("submit", async e => {
     const bad = (r.work||[]).findIndex(w=>!String(w.desc||"").trim());
     if (bad>=0){ toast("Describe the work in each row, or remove the empty row"); const el = document.querySelector(`[data-w="work.${bad}.desc"]`); if (el) el.focus(); return; }
     if (!r.billMonth) r.billMonth = String(r.received||TODAY()).slice(0,7);
+    if (r.status==="Done" && !r.doneOn) r.doneOn = TODAY();
+    if (r.status!=="Done") r.doneOn = "";
   }
   if (drawer.coll==="requests" && !r.due && r.received) r.due = addDays(r.received, r.priority==="Urgent"?1:r.priority==="High"?3:7);
   const coll = drawer.coll, isNew = drawer.isNew, after = drawer.after;
