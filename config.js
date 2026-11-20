@@ -10,5 +10,5 @@
 // decides who can see anything. Never put the service_role key here.
 window.PRACTICE_DESK_CONFIG = {
   supabaseUrl: "https://pinszqbcnchqfwtzylzy.supabase.co",
-  supabaseAnonKey: ""
+  supabaseAnonKey: "sb_publishable_k4NusQx9tNAFidAdpYj19w_lQgtYuhI"
 };
