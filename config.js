@@ -9,6 +9,6 @@
 // The anon key is meant to be public: row-level security in supabase/schema.sql
 // decides who can see anything. Never put the service_role key here.
 window.PRACTICE_DESK_CONFIG = {
-  supabaseUrl: "",
+  supabaseUrl: "https://pinszqbcnchqfwtzylzy.supabase.co",
   supabaseAnonKey: ""
 };
