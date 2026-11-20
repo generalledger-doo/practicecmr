@@ -41,6 +41,17 @@ nav.rail a[aria-current="page"]{background:var(--accent-soft);color:var(--accent
 nav.rail .count{font-family:var(--font-data);font-size:11px;color:var(--muted)}
 nav.rail .sep{height:1px;background:var(--line);margin:8px 10px}
 .sync{margin-top:auto;font-size:12px;color:var(--muted);padding:0 10px}
+.sync.who{margin-top:4px}.sync.who:empty{display:none}
+#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto}
+#auth[hidden]{display:none}
+#auth .authbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px}
+#auth h1{font-family:var(--font-display);font-size:22px;margin:0}
+#auth .sub{margin:0;color:var(--muted)}
+#auth form{display:flex;flex-direction:column;gap:12px}
+#auth .r{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#auth .msg{color:var(--bad);font-size:13px;min-height:1em}#auth .msg[data-ok="1"]{color:var(--ok)}
+#auth .qr{display:grid;place-items:center;min-height:180px;background:#fff;border-radius:var(--r)}
+#auth code{font-family:var(--font-data);word-break:break-all}
 main{padding-block:24px 48px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
 .head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
 h1{font-family:var(--font-display);font-weight:600;font-size:26px;margin:0;text-wrap:balance;letter-spacing:-.01em}
@@ -228,11 +239,13 @@ code{font-family:var(--font-data);font-size:11.5px;background:var(--sunken);padd
     <span class="sep"></span>
     <a href="#setup" data-v="setup">Firm &amp; accounting</a>
     <div class="sync" id="sync">Connecting…</div>
+    <div class="sync who" id="who"></div>
   </nav>
   <main id="main"></main>
 </div>
 <div id="overlay"></div>
 
+<script src="config.js"></script>
 <script type="application/json" id="default-templates">{"accounting": {"name": "Accounting – Pogodba o vodenju poslovnih knjig", "kind": "Accounting", "numFmt": "NN/YYYY", "source": "Pogodba_racunovodstvo.docx", "sl": {"title": "Pogodba o vodenju poslovnih knjig", "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju izvajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju naročnik\n\n# POGODBA O VODENJU POSLOVNIH KNJIG\n## Št. {{doc.number}}\n\n## I. PREDMET POGODBE\n## 1. člen\nS to pogodbo se pogodbeni stranki sporazumeta, da izvajalec za naročnika vodi poslovne knjige in opravlja druge dogovorjene storitve.\n\n## 2. člen (obseg storitev)\nObseg storitev, ki so vključene v mesečni pavšal, obsega:\n- {{f.included}}\n\n## 3. člen (Dodatne storitve in poseben obračun)\nNaslednje storitve niso vključene v osnovni pavšal in so predmet posebnega obračuna:\n- {{f.extra}}\n\n## II. OBVEZNOSTI IN ODGOVORNOST\n## 4. člen\nIzvajalec se zavezuje, da bo storitve opravljal strokovno in v skladu z veljavno zakonodajo. Naročnikove podatke bo obravnaval kot poslovno tajnost.\n\n## 5. člen\nNaročnik se zavezuje, da bo izvajalcu pravočasno in redno dostavljal verodostojno knjigovodsko dokumentacijo. Podatke za obračun plač mora naročnik posredovati najpozneje do {{f.payrollDay}} v mesecu za pretekli mesec.\n\n## III. CENA IN PLAČILNI POGOJI\n## 6. člen\nCena za osnovni obseg storitev se določi v skladu z računovodsko tarifo oziroma po dogovorjenem mesečnem pavšalu. V ceni ni vštet DDV.\n?f.fee Dogovorjeni mesečni pavšal znaša {{f.fee}} EUR brez DDV.\n\n## 7. člen\nNaročnik se zaveže račun izvajalca poravnati v roku {{f.payDays}} dni od datuma izstavitve. V primeru zamude se obračunajo zakonite zamudne obresti.\n\n## IV. ODPOVED POGODBE IN PREHOD\n## 8. člen\nOdpovedni rok pri sporazumni prekinitvi ne more biti daljši od enega meseca. Izvajalec lahko enostransko odpove pogodbo, če naročnik dvakrat zaporedoma ne poravna svojih obveznosti.\n\n## 9. člen (Stroški izpisov ob prehodu)\nV primeru odpovedi pogodbe in prehoda k drugemu izvajalcu storitev si izvajalec pridržuje pravico zaračunati pripravo izpisov poslovnih knjig in prenos dokumentacije v višini enega mesečnega pavšala. Izvajalec izroči dokumentacijo v roku 5 dni od prejema plačila vseh obveznosti.\n\n## V. KONČNE DOLOČBE\n## 10. člen\nPogodba stopi v veljavo z dnem podpisa in se uporablja od {{f.startDate}} dalje.\n\nV Rogatcu, dne {{doc.date}}\n\n|| IZVAJALEC: __________________________ \\\\ {{firm.name}} || NAROČNIK: __________________________ \\\\ {{client.contact}}"}, "en": {"title": "Bookkeeping Services Agreement", "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Provider\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Client\n\n# BOOKKEEPING SERVICES AGREEMENT\n## No. {{doc.number}}\n\n## I. SUBJECT OF THE AGREEMENT\n## Article 1\nBy this Agreement the parties agree that the Provider will keep the Client's books of account and perform other agreed services.\n\n## Article 2 (Scope of services)\nThe services included in the monthly flat fee comprise:\n- {{f.included}}\n\n## Article 3 (Additional services charged separately)\nThe following services are not included in the basic flat fee and are charged separately:\n- {{f.extra}}\n\n## II. OBLIGATIONS AND LIABILITY\n## Article 4\nThe Provider undertakes to perform the services professionally and in accordance with applicable law. The Provider will treat the Client's data as a business secret.\n\n## Article 5\nThe Client undertakes to deliver authentic accounting documents to the Provider regularly and on time. The Client must provide payroll data for the previous month no later than {{f.payrollDay}} of the month.\n\n## III. PRICE AND PAYMENT TERMS\n## Article 6\nThe price for the basic scope of services is determined in accordance with the accounting tariff or the agreed monthly flat fee. VAT is not included in the price.\n?f.fee The agreed monthly flat fee is EUR {{f.fee}} excluding VAT.\n\n## Article 7\nThe Client undertakes to pay the Provider's invoices within {{f.payDays}} days of the invoice date. Statutory default interest is charged on late payments.\n\n## IV. TERMINATION AND HANDOVER\n## Article 8\nThe notice period for termination by mutual agreement may not exceed one month. The Provider may terminate the Agreement unilaterally if the Client fails to settle its obligations twice in a row.\n\n## Article 9 (Costs of ledger reports on transfer)\nIf the Agreement is terminated and the Client moves to another service provider, the Provider reserves the right to charge for preparing ledger reports and transferring the documentation in the amount of one monthly flat fee. The Provider will hand over the documentation within 5 days of receiving payment of all outstanding obligations.\n\n## V. FINAL PROVISIONS\n## Article 10\nThis Agreement enters into force on the date of signature and applies from {{f.startDate}}.\n\nRogatec, {{doc.date}}\n\n|| PROVIDER: __________________________ \\\\ {{firm.name}} || CLIENT: __________________________ \\\\ {{client.contact}}"}, "fields": [{"k": "firmRep", "l": "Provider represented by", "t": "text", "dsl": "direktorica Klara Boršič", "den": "director Klara Boršič"}, {"k": "included", "l": "Services included in the monthly flat fee", "t": "list", "dsl": "Obračun plač in nadomestil plač.\nObračun prispevkov za socialno varnost in poročanje institucijam (ZPIZ, DURS/FURS).\nObračun DDV ter vodenje knjig prejetih in izdanih računov.\nSvetovanje v obsegu do 1 ure na mesec.", "den": "Calculation of salaries and salary compensation.\nCalculation of social security contributions and reporting to institutions (ZPIZ, FURS).\nVAT calculation and keeping the books of received and issued invoices.\nAdvice of up to 1 hour per month."}, {"k": "extra", "l": "Additional services charged separately", "t": "list", "dsl": "Letno poročilo: Sestava letnih računovodskih izkazov (bilanca stanja, izkaz uspeha) in davčne bilance.\nSvetovanje: Kakršnokoli svetovanje, ki presega osnovni obseg 1 ure na mesec.\nPoročila za banke: Podrobnejša priprava poročil in zbiranje podatkov za finančne institucije.\nDelovna dovoljenja: Postopki pridobivanja delovnih dovoljenj za tujce.\nKadrovske storitve: Priprava pogodb o zaposlitvi ter prijave in odjave delavcev v socialna zavarovanja.", "den": "Annual report: preparation of the annual financial statements (balance sheet, income statement) and the tax return.\nAdvice: any advice beyond the basic 1 hour per month.\nReports for banks: detailed preparation of reports and collection of data for financial institutions.\nWork permits: procedures for obtaining work permits for foreign nationals.\nHR services: preparation of employment contracts and registration and deregistration of employees for social insurance."}, {"k": "payrollDay", "l": "Payroll data due by", "t": "text", "dsl": "tretjega delovnega dne", "den": "the third working day"}, {"k": "fee", "l": "Monthly flat fee in EUR (optional – adds a sentence to Article 6)", "t": "number", "dsl": "=client.fee", "den": "=client.fee"}, {"k": "payDays", "l": "Invoice payment term (days)", "t": "number", "dsl": "10", "den": "10"}, {"k": "startDate", "l": "Applies from", "t": "date", "dsl": "=today", "den": "=today"}]}, "rental": {"name": "Rental – Najem poslovnega prostora / sedež", "kind": "Rental", "numFmt": "NAJ-NN/YYYY", "source": "Starter draft – replace with your sample", "sl": {"title": "Pogodba o najemu poslovnega prostora", "body": "# POGODBA O NAJEMU POSLOVNEGA PROSTORA\n## Št. {{doc.number}}\n\nki jo skleneta\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju najemodajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju najemnik\n\n## 1. člen (predmet najema)\nNajemodajalec oddaja najemniku v najem poslovni prostor na naslovu {{f.premises}} v izmeri {{f.area}} m² (v nadaljevanju: poslovni prostor).\nNajemnik bo poslovni prostor uporabljal za {{f.purpose}}.\n\n## 2. člen (poslovni naslov in sedež)\nNajemodajalec soglaša, da najemnik naslov poslovnega prostora uporablja kot poslovni naslov oziroma sedež in ga vpiše v sodni oziroma poslovni register. Ta pogodba velja kot pisno soglasje lastnika za vpis poslovnega naslova.\nOb prenehanju najema mora najemnik v 30 dneh vložiti predlog za spremembo poslovnega naslova oziroma sedeža.\n\n## 3. člen (najemnina in stroški)\nMesečna najemnina znaša {{f.rent}} EUR.\n?f.rentVat {{f.rentVat}}\nNajemnik plača najemnino na podlagi računa najemodajalca do {{f.payDay}}. dne v mesecu za tekoči mesec. V primeru zamude se obračunajo zakonite zamudne obresti.\n{{f.costs}}\n?f.deposit Najemnik ob podpisu pogodbe plača varščino v višini {{f.deposit}} EUR, ki mu jo najemodajalec ob prenehanju najema vrne, zmanjšano za morebitne neporavnane obveznosti.\n\n## 4. člen (prejemanje pošte)\nNajemodajalec bo za najemnika sprejemal pošto, ki prispe na naslov poslovnega prostora, in ga o prejeti pošti obveščal {{f.mail}}.\n\n## 5. člen (obveznosti najemnika)\nNajemnik bo poslovni prostor uporabljal skrbno in v skladu z namenom najema. Brez pisnega soglasja najemodajalca ga ne bo oddajal v podnajem in v njem ne bo izvajal sprememb. Ob prenehanju najema ga bo vrnil v stanju, v kakršnem ga je prejel, upoštevaje običajno rabo.\n\n## 6. člen (trajanje in odpoved)\nPogodba je sklenjena za {{f.duration}} in se uporablja od {{f.startDate}} dalje. Vsaka pogodbena stranka jo lahko pisno odpove z odpovednim rokom {{f.notice}}.\nNajemodajalec lahko pogodbo odpove brez odpovednega roka, če najemnik dva meseca zaporedoma ne plača najemnine.\n\n## 7. člen (končne določbe)\nZa vprašanja, ki jih ta pogodba ne ureja, se uporabljajo določbe Obligacijskega zakonika. Morebitne spore bosta stranki reševali sporazumno, sicer je pristojno stvarno pristojno sodišče po sedežu najemodajalca.\nPogodba stopi v veljavo z dnem podpisa obeh strank in je sestavljena v dveh enakih izvodih, od katerih prejme vsaka stranka po enega.\n\nV Rogatcu, dne {{doc.date}}\n\n|| NAJEMODAJALEC: __________________________ \\\\ {{firm.name}} || NAJEMNIK: __________________________ \\\\ {{client.contact}}"}, "en": {"title": "Business Premises Lease Agreement", "body": "# BUSINESS PREMISES LEASE AGREEMENT\n## No. {{doc.number}}\n\nconcluded between\n\n**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Landlord\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Tenant\n\n## Article 1 (Premises)\nThe Landlord leases to the Tenant the business premises at {{f.premises}}, measuring {{f.area}} m² (the Premises).\nThe Tenant will use the Premises for {{f.purpose}}.\n\n## Article 2 (Business address and registered office)\nThe Landlord agrees that the Tenant may use the address of the Premises as its business address or registered office and register it in the court or business register. This Agreement serves as the owner's written consent to the registration of the business address.\nWhen the lease ends, the Tenant must apply to change its business address or registered office within 30 days.\n\n## Article 3 (Rent and costs)\nThe monthly rent is EUR {{f.rent}}.\n?f.rentVat {{f.rentVat}}\nThe Tenant pays the rent on the basis of the Landlord's invoice by the {{f.payDay}}th day of each month for the current month. Statutory default interest is charged on late payments.\n{{f.costs}}\n?f.deposit On signing this Agreement the Tenant pays a deposit of EUR {{f.deposit}}, which the Landlord returns when the lease ends, less any unpaid amounts.\n\n## Article 4 (Receiving mail)\nThe Landlord will receive mail delivered to the address of the Premises on behalf of the Tenant and notify the Tenant of mail received {{f.mail}}.\n\n## Article 5 (Tenant's obligations)\nThe Tenant will use the Premises with care and only for the agreed purpose. Without the Landlord's written consent the Tenant will not sublet the Premises or make alterations. When the lease ends, the Tenant will return the Premises in the condition in which it received them, allowing for normal wear and tear.\n\n## Article 6 (Term and termination)\nThis Agreement is concluded for {{f.duration}} and applies from {{f.startDate}}. Either party may terminate it in writing with {{f.notice}}' notice.\nThe Landlord may terminate the Agreement without notice if the Tenant fails to pay the rent for two consecutive months.\n\n## Article 7 (Final provisions)\nMatters not regulated by this Agreement are governed by the Slovenian Obligations Code. The parties will try to resolve disputes amicably; failing that, the competent court at the Landlord's registered office has jurisdiction.\nThis Agreement enters into force when signed by both parties and is made in two identical copies, one for each party.\n\nRogatec, {{doc.date}}\n\n|| LANDLORD: __________________________ \\\\ {{firm.name}} || TENANT: __________________________ \\\\ {{client.contact}}"}, "fields": [{"k": "firmRep", "l": "Landlord represented by", "t": "text", "dsl": "direktorica Klara Boršič", "den": "director Klara Boršič"}, {"k": "premises", "l": "Address of the premises", "t": "text", "dsl": "Celjska cesta 47, 3252 Rogatec", "den": "Celjska cesta 47, 3252 Rogatec, Slovenia"}, {"k": "area", "l": "Area (m²)", "t": "number", "dsl": "", "den": ""}, {"k": "purpose", "l": "Use of the premises", "t": "text", "dsl": "opravljanje dejavnosti in kot poslovni naslov (sedež) najemnika", "den": "carrying on the Tenant's business and as the Tenant's business address (registered office)"}, {"k": "rent", "l": "Monthly rent (EUR)", "t": "number", "dsl": "", "den": ""}, {"k": "rentVat", "l": "VAT sentence (optional)", "t": "text", "dsl": "", "den": ""}, {"k": "payDay", "l": "Rent due by day of month", "t": "number", "dsl": "8", "den": "8"}, {"k": "costs", "l": "Running costs", "t": "textarea", "dsl": "Obratovalni stroški (elektrika, ogrevanje, voda in čiščenje skupnih prostorov) so vključeni v najemnino.", "den": "Running costs (electricity, heating, water and cleaning of common areas) are included in the rent."}, {"k": "deposit", "l": "Deposit (EUR, optional)", "t": "number", "dsl": "", "den": ""}, {"k": "mail", "l": "How mail is notified", "t": "text", "dsl": "po elektronski pošti", "den": "by email"}, {"k": "duration", "l": "Term", "t": "text", "dsl": "nedoločen čas", "den": "an indefinite period"}, {"k": "startDate", "l": "Applies from", "t": "date", "dsl": "=today", "den": "=today"}, {"k": "notice", "l": "Notice period", "t": "text", "dsl": "3 (treh) mesecev", "den": "3 (three) months"}]}}</script>
 <script>
 (() => {
@@ -408,33 +421,218 @@ function setSync(t){ document.getElementById("sync").textContent = t; }
 
 // ---------- local (browser) storage: used when the page is opened outside claude.ai ----------
 const LS_KEY = "practicedesk:v1";
+// in-memory copy of the records with snapshot listeners (same shape as the claude.ai db)
+function cacheStore(){
+  const st = {data:{}}, collSubs = {}, docSubs = {};
+  const snap = coll => ({docs:Object.entries(st.data[coll]||{}).map(([id,v])=>({id, data:()=>structuredClone(v)})), metadata:{fromCache:false}});
+  const dsnap = (coll,id) => { const v = (st.data[coll]||{})[id]; return {exists:v!==undefined, data:()=>structuredClone(v)}; };
+  st.fire = coll => { (collSubs[coll]||[]).forEach(f=>f(snap(coll))); Object.entries(docSubs).forEach(([k,fs])=>{ const [c,id] = k.split("/"); if (c===coll) fs.forEach(f=>f(dsnap(c,id))); }); };
+  st.fireAll = () => { new Set([...Object.keys(collSubs), ...Object.keys(docSubs).map(k=>k.split("/")[0])]).forEach(st.fire); };
+  st.onColl = (coll, fn) => { (collSubs[coll] ||= []).push(fn); fn(snap(coll)); };
+  st.onDoc = (coll, id, fn) => { (docSubs[coll+"/"+id] ||= []).push(fn); fn(dsnap(coll,id)); };
+  st.put = (coll, id, v) => { (st.data[coll] ||= {})[id] = v; };
+  st.drop = (coll, id) => { if (st.data[coll]) delete st.data[coll][id]; };
+  return st;
+}
 function localDb(){
-  let data = {};
-  const read = () => { try { data = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch(e){ data = {}; } };
+  const st = cacheStore();
+  const read = () => { try { st.data = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch(e){ st.data = {}; } };
   read();
-  const collSubs = {}, docSubs = {};
   const persist = () => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+    try { localStorage.setItem(LS_KEY, JSON.stringify(st.data)); }
     catch(e){ setSync("Not saved — browser storage is full or blocked"); throw {code:"storage_full", message:"browser storage is full or blocked"}; }
   };
-  const snap = coll => ({docs:Object.entries(data[coll]||{}).map(([id,v])=>({id, data:()=>structuredClone(v)})), metadata:{fromCache:false}});
-  const dsnap = (coll,id) => { const v = (data[coll]||{})[id]; return {exists:v!==undefined, data:()=>structuredClone(v)}; };
-  const fire = coll => { (collSubs[coll]||[]).forEach(f=>f(snap(coll))); Object.entries(docSubs).forEach(([k,fs])=>{ const [c,id] = k.split("/"); if (c===coll) fs.forEach(f=>f(dsnap(c,id))); }); };
-  const fireAll = () => { const cs = new Set([...Object.keys(collSubs), ...Object.keys(docSubs).map(k=>k.split("/")[0])]); cs.forEach(fire); };
-  window.addEventListener("storage", e => { if (e.key===LS_KEY){ read(); fireAll(); } });
+  window.addEventListener("storage", e => { if (e.key===LS_KEY){ read(); st.fireAll(); } });
   return {
     local:true,
     collection: coll => ({
       doc: id => ({
-        set: async body => { (data[coll] ||= {})[id] = JSON.parse(JSON.stringify(body)); persist(); fire(coll); },
-        delete: async () => { if (data[coll]) delete data[coll][id]; persist(); fire(coll); },
-        onSnapshot: (fn) => { (docSubs[coll+"/"+id] ||= []).push(fn); fn(dsnap(coll,id)); }
+        set: async body => { st.put(coll, id, JSON.parse(JSON.stringify(body))); persist(); st.fire(coll); },
+        delete: async () => { st.drop(coll, id); persist(); st.fire(coll); },
+        onSnapshot: fn => st.onDoc(coll, id, fn)
       }),
-      onSnapshot: (fn) => { (collSubs[coll] ||= []).push(fn); fn(snap(coll)); }
+      onSnapshot: fn => st.onColl(coll, fn)
     }),
-    dump: () => structuredClone(data),
-    load: (d, merge) => { data = merge ? Object.fromEntries([...new Set([...Object.keys(data), ...Object.keys(d)])].map(c=>[c, {...(data[c]||{}), ...(d[c]||{})}])) : d; persist(); fireAll(); }
+    load: async (d, merge) => { st.data = merge ? Object.fromEntries([...new Set([...Object.keys(st.data), ...Object.keys(d)])].map(c=>[c, {...(st.data[c]||{}), ...(d[c]||{})}])) : d; persist(); st.fireAll(); }
   };
+}
+
+// ---------- online storage (Supabase): shared by everyone in the practice ----------
+const CFG = window.PRACTICE_DESK_CONFIG || {};
+const onlineConfigured = () => !!(CFG.supabaseUrl && CFG.supabaseAnonKey);
+let sb = null, me = null;
+const sbErr = e => { const m = e && (e.message || e.code) || String(e); return {code: e && e.code==="42501" ? "you don't have access (ask the administrator)" : m, message: m}; };
+function supaDb(){
+  const st = cacheStore();
+  let down = false;
+  async function loadAll(){
+    const fresh = {}, N = 1000;
+    for (let from = 0; ; from += N) {
+      const {data:rows, error} = await sb.from("records").select("coll,id,data").order("coll").order("id").range(from, from+N-1);
+      if (error) throw sbErr(error);
+      rows.forEach(r => { (fresh[r.coll] ||= {})[r.id] = r.data; });
+      if (rows.length < N) break;
+    }
+    st.data = fresh; st.fireAll();
+  }
+  const live = () => setSync("Saved online · synced live");
+  const channel = sb.channel("records-sync")
+    .on("postgres_changes", {event:"*", schema:"public", table:"records"}, p => {
+      if (p.eventType==="DELETE") { const o = p.old||{}; if (o.coll) { st.drop(o.coll, o.id); st.fire(o.coll); } }
+      else if (p.new && p.new.coll) { st.put(p.new.coll, p.new.id, p.new.data); st.fire(p.new.coll); }
+    })
+    .subscribe(status => {
+      if (status==="SUBSCRIBED") { if (down) { down = false; loadAll().then(live).catch(()=>{}); } else live(); }
+      else if (status==="CHANNEL_ERROR" || status==="TIMED_OUT" || status==="CLOSED") { down = true; setSync("Connection lost — reconnecting…"); }
+    });
+  window.addEventListener("online", () => { loadAll().catch(()=>{}); });
+  const upsert = async rows => { for (let i = 0; i < rows.length; i += 500) { const {error} = await sb.from("records").upsert(rows.slice(i, i+500)); if (error) throw sbErr(error); } };
+  return {
+    online:true, ready: loadAll(), channel,
+    collection: coll => ({
+      doc: id => ({
+        set: async body => { const data = JSON.parse(JSON.stringify(body)); await upsert([{coll, id, data}]); st.put(coll, id, data); st.fire(coll); },
+        delete: async () => { const {error} = await sb.from("records").delete().eq("coll", coll).eq("id", id); if (error) throw sbErr(error); st.drop(coll, id); st.fire(coll); },
+        onSnapshot: fn => st.onDoc(coll, id, fn)
+      }),
+      onSnapshot: fn => st.onColl(coll, fn)
+    }),
+    load: async (d, merge) => {
+      if (!merge) for (const c of COLLS) {
+        const gone = Object.keys(st.data[c]||{}).filter(id => !(d[c]||{})[id]);
+        for (let i = 0; i < gone.length; i += 200) { const {error} = await sb.from("records").delete().eq("coll", c).in("id", gone.slice(i, i+200)); if (error) throw sbErr(error); }
+      }
+      const rows = []; for (const c of Object.keys(d)) for (const [id, data] of Object.entries(d[c]||{})) rows.push({coll:c, id, data});
+      await upsert(rows); await loadAll();
+    }
+  };
+}
+
+// sign-in screens: password, set password (invite / reset), two-factor set-up and code, not yet a member
+const urlAuthType = (String(location.hash).match(/type=(invite|recovery|signup)/)||[])[1] || "";
+let needPassword = urlAuthType==="invite" || urlAuthType==="recovery";
+const authEl = () => { let el = document.getElementById("auth"); if (!el) { el = document.createElement("div"); el.id = "auth"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-labelledby","authtitle"); document.body.appendChild(el); el.addEventListener("submit", authSubmit); el.addEventListener("click", authClick); } return el; };
+function authView(kind, extra={}){
+  const el = authEl(); el.dataset.kind = kind; el.hidden = false;
+  const email = (sb && extra.email) || "";
+  const out = `<button type="button" class="btn small" data-auth="signout">Sign out</button>`;
+  const v = {
+    signin:`<h1 id="authtitle">Sign in</h1><p class="sub">Practice Desk CRM</p>
+      <form><div class="f"><label for="a_email">Email</label><input id="a_email" name="email" type="email" autocomplete="username" required value="${esc(email)}"></div>
+      <div class="f"><label for="a_pw">Password</label><input id="a_pw" name="password" type="password" autocomplete="current-password" required></div>
+      <div class="msg" role="status"></div><div class="r"><button type="button" class="btn" data-auth="forgot">Forgot password</button><button class="btn primary">Sign in</button></div></form>`,
+    newpw:`<h1 id="authtitle">Choose a password</h1><p class="sub">At least 10 characters. You'll use it with your email to sign in.</p>
+      <form><div class="f"><label for="a_pw1">New password</label><input id="a_pw1" name="pw1" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div class="f"><label for="a_pw2">Repeat password</label><input id="a_pw2" name="pw2" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div class="msg" role="status"></div><div class="r">${out}<button class="btn primary">Save password</button></div></form>`,
+    enroll:`<h1 id="authtitle">Set up two-factor sign-in</h1><p class="sub">Client and AML records need a second step. Scan this code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…), then enter the 6-digit code it shows.</p>
+      <div class="qr">${extra.qr?`<img src="${esc(extra.qr)}" alt="QR code for your authenticator app" width="180" height="180">`:'<span class="spin"></span>'}</div>
+      ${extra.secret?`<p class="hint">Can't scan? Enter this key instead: <code>${esc(extra.secret)}</code></p>`:""}
+      <form><div class="f"><label for="a_code">6-digit code</label><input id="a_code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></div>
+      <div class="msg" role="status"></div><div class="r">${out}<button class="btn primary">Verify</button></div></form>`,
+    mfa:`<h1 id="authtitle">Enter your code</h1><p class="sub">Open your authenticator app and enter the 6-digit code for Practice Desk.</p>
+      <form><div class="f"><label for="a_code">6-digit code</label><input id="a_code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus></div>
+      <div class="msg" role="status"></div><div class="r">${out}<button class="btn primary">Continue</button></div></form>`,
+    pending:`<h1 id="authtitle">Waiting for access</h1><p class="sub">You're signed in as <b>${esc(email)}</b>, but this account hasn't been added to the practice yet. Ask the administrator to add you, then reload this page.</p>
+      <div class="r">${out}<button type="button" class="btn primary" data-auth="retry">Check again</button></div>`,
+    error:`<h1 id="authtitle">Can't connect</h1><p class="sub">${esc(extra.msg||"The database didn't answer.")}</p><div class="r"><button type="button" class="btn primary" data-auth="retry">Try again</button></div>`
+  }[kind];
+  el.innerHTML = `<div class="authbox">${v}</div>`;
+  const first = el.querySelector("input:not([value]),input[value=''],input"); if (first) first.focus();
+  if (extra.msg && kind!=="error") authMsg(extra.msg);
+}
+const authMsg = (t, ok) => { const m = document.querySelector("#auth .msg"); if (m) { m.textContent = t; m.dataset.ok = ok ? "1" : ""; } };
+function hideAuth(){ const el = document.getElementById("auth"); if (el) { el.hidden = true; el.innerHTML = ""; } }
+async function authClick(e){
+  const b = e.target.closest("[data-auth]"); if (!b) return;
+  const a = b.dataset.auth;
+  if (a==="signout"){ await sb.auth.signOut().catch(()=>{}); location.hash = ""; location.reload(); }
+  else if (a==="retry"){ gate(); }
+  else if (a==="forgot"){
+    const email = (document.getElementById("a_email")||{}).value || "";
+    if (!emailOf(email)) { authMsg("Enter your email address first."); return; }
+    const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname});
+    authMsg(error ? "Couldn't send the email: " + error.message : "If that address has an account, a link to reset the password is on its way.", !error);
+  }
+}
+async function authSubmit(e){
+  e.preventDefault();
+  const f = e.target, kind = authEl().dataset.kind, btn = f.querySelector("button.primary");
+  const fd = Object.fromEntries(new FormData(f));
+  btn.disabled = true; authMsg("");
+  try {
+    if (kind==="signin") {
+      const {error} = await sb.auth.signInWithPassword({email:fd.email.trim(), password:fd.password});
+      if (error) { authMsg(error.status===400 ? "Email or password is wrong." : error.message); return; }
+      await gate();
+    } else if (kind==="newpw") {
+      if (fd.pw1 !== fd.pw2) { authMsg("The two passwords don't match."); return; }
+      const {error} = await sb.auth.updateUser({password:fd.pw1});
+      if (error) { authMsg(error.message); return; }
+      needPassword = false; await gate();
+    } else if (kind==="enroll" || kind==="mfa") {
+      let factorId = authEl().dataset.factor;
+      if (!factorId) { const {data} = await sb.auth.mfa.listFactors(); factorId = ((data && data.totp)||[])[0] && data.totp[0].id; }
+      if (!factorId) { authMsg("No authenticator is set up for this account."); return; }
+      const {error} = await sb.auth.mfa.challengeAndVerify({factorId, code:String(fd.code).trim()});
+      if (error) { authMsg("That code didn't work. Check the time on your phone and try the newest code."); return; }
+      await gate();
+    }
+  } catch(err){ authMsg(err.message || String(err)); }
+  finally { btn.disabled = false; }
+}
+async function startEnroll(){
+  authView("enroll");
+  try {
+    const {data:lf} = await sb.auth.mfa.listFactors();
+    for (const f of ((lf && lf.all)||[]).filter(f=>f.status!=="verified")) await sb.auth.mfa.unenroll({factorId:f.id}).catch(()=>{});
+    const {data, error} = await sb.auth.mfa.enroll({factorType:"totp", friendlyName:"Practice Desk " + new Date().toISOString().slice(0,16)});
+    if (error) throw error;
+    const qr = String(data.totp.qr_code||""), raw = qr.replace(/^data:image\/svg\+xml;(utf-8|charset=utf-8),/, "");
+    authView("enroll", {qr: raw.trim().startsWith("<") ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(raw) : qr, secret:data.totp.secret});
+    authEl().dataset.factor = data.id;
+  } catch(e){ authView("error", {msg:"Couldn't start two-factor set-up: " + (e.message||e) + ". Check that TOTP multi-factor authentication is enabled in Supabase (Authentication → Sign In / Providers → Multi-Factor)."}); }
+}
+// decides which sign-in step is next; starts the CRM when everything is in place
+async function gate(){
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    if (!session) { authView("signin"); return; }
+    if (needPassword) { authView("newpw"); return; }
+    const {data:aal, error} = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (error) throw error;
+    if (aal.currentLevel !== "aal2") { if (aal.nextLevel === "aal2") { authEl().dataset.factor = ""; authView("mfa"); } else await startEnroll(); return; }
+    const {data:mem, error:me2} = await sb.from("members").select("name,role,email").eq("user_id", session.user.id).maybeSingle();
+    if (me2) throw me2;
+    if (!mem) { authView("pending", {email:session.user.email}); return; }
+    me = {...mem, email:session.user.email};
+    hideAuth(); startOnline();
+  } catch(e){ authView("error", {msg:"Can't reach the database: " + (e.message||e)}); }
+}
+function attachStore(){
+  for (const coll of COLLS) db.collection(coll).onSnapshot(snap => { state[coll] = snap.docs.map(d => ({id:d.id, ...d.data()})); render(); });
+  db.collection("settings").doc("firm").onSnapshot(s => { if (setupDirty) return; if (s.exists) { firm = {...structuredClone(DEFAULT_FIRM), ...s.data()}; firm.prices = {...DEFAULT_FIRM.prices, ...(s.data().prices||{})}; } if (view==="setup" && document.activeElement && document.activeElement.closest && document.activeElement.closest("#firmform")) return; render(); });
+}
+function startOnline(){
+  if (db) return;
+  db = supaDb(); mode = "online"; setSync("Loading…");
+  const who = document.getElementById("who");
+  if (who) who.innerHTML = `<span>${esc(me.name||me.email)}</span> · <a href="#" data-signout>Sign out</a>`;
+  attachStore();
+  db.ready.catch(e => setSync("Couldn't load: " + (e.message||e.code)));
+}
+const loadScript = src => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = () => rej(new Error("couldn't load " + src)); document.head.appendChild(el); });
+async function bootOnline(){
+  mode = "connecting"; setSync("Connecting…"); downloads = browserDownloads;
+  try { if (!window.supabase) await loadScript("vendor/supabase.js"); }
+  catch(e){ authView("error", {msg:"The sign-in library didn't load. Check your internet connection and reload."}); return; }
+  sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
+  sb.auth.onAuthStateChange(ev => {
+    if (ev==="PASSWORD_RECOVERY") { needPassword = true; setTimeout(gate, 0); }
+    if (ev==="SIGNED_OUT" && db) location.reload();
+  });
+  document.addEventListener("click", e => { if (e.target.closest("[data-signout]")) { e.preventDefault(); sb.auth.signOut().finally(()=>{ location.hash = ""; location.reload(); }); } });
+  await gate();
 }
 function seedTemplates(){
   if (!db || !db.local) return;
@@ -465,7 +663,7 @@ async function importBackup(text, name){
   const replace = confirm(`Restore ${n} records from ${name}?\n\nOK = replace everything currently in Practice Desk with the backup.\nCancel = choose whether to merge instead.`);
   if (!replace && !confirm("Merge the backup into your current records instead? Records with the same id are overwritten by the backup.")) return;
   try {
-    if (db && db.local) { db.load(d, !replace); }
+    if (db && db.load) { toast("Restoring…"); await db.load(d, !replace); }
     else if (db) {
       if (replace) for (const c of COLLS) for (const r of state[c]) if (!(d[c]||{})[r.id]) await db.collection(c).doc(r.id).delete();
       for (const c of [...COLLS, "settings"]) for (const [id, r] of Object.entries(d[c]||{})) await db.collection(c).doc(id).set(r);
@@ -477,12 +675,12 @@ async function importBackup(text, name){
 async function boot(){
   render();
   const c = window.claude;
+  if ((!c || !c.use) && onlineConfigured()) { await bootOnline(); return; }
   if (!c || !c.use) {
     downloads = browserDownloads;
     if (!storageOk()) { mode = "local"; setSync("Not saved — browser storage is blocked"); render(); return; }
     db = localDb(); mode = "browser"; setSync("Saved in this browser");
-    for (const coll of COLLS) db.collection(coll).onSnapshot(snap => { state[coll] = snap.docs.map(d => ({id:d.id, ...d.data()})); render(); });
-    db.collection("settings").doc("firm").onSnapshot(s => { if (setupDirty) return; if (s.exists) { firm = {...structuredClone(DEFAULT_FIRM), ...s.data()}; firm.prices = {...DEFAULT_FIRM.prices, ...(s.data().prices||{})}; } if (view==="setup" && document.activeElement && document.activeElement.closest && document.activeElement.closest("#firmform")) return; render(); });
+    attachStore();
     seedTemplates();
     return;
   }
@@ -938,11 +1136,11 @@ function vSetup(){
       <button class="btn small primary" data-act="imp-apply" ${imp.rows.length?"":"disabled"}>Import ${imp.newRows.length} new and update ${imp.upd.length}</button><button class="btn small" data-act="imp-cancel">Cancel</button></div>`:""}
   </section>
   <section class="panel" style="margin-top:20px"><h2>Backup</h2>
-    <p class="sub" style="margin:0 0 12px">${mode==="browser"?"Your records live in this browser only. Clearing browser data deletes them, and other computers don't see them. ":""}A backup is one JSON file with every lead, client, formation, AML check, request, document, template and your firm settings. Restore it here on any computer or browser to move or recover your records.</p>
+    <p class="sub" style="margin:0 0 12px">${mode==="browser"?"Your records live in this browser only. Clearing browser data deletes them, and other computers don't see them. ":mode==="online"?"Your records are stored online and backed up by the database host. Keep a monthly backup file offline as well. ":""}A backup is one JSON file with every lead, client, formation, AML check, request, document, template and your firm settings. Restore it here on any computer or browser to move or recover your records.</p>
     <div class="tools">
       <button class="btn primary" data-act="backup">Download backup</button>
       <label class="btn" for="restorefile">Restore from backup…</label><input type="file" id="restorefile" accept=".json,application/json" hidden>
-      ${mode==="browser"?`<button class="btn" data-act="load-templates">Reload default contract templates</button>`:""}
+      ${mode==="browser"||mode==="online"?`<button class="btn" data-act="load-templates">Reload default contract templates</button>`:""}
     </div>
   </section>`;
 }
@@ -1719,6 +1917,7 @@ document.addEventListener("change", e => {
   if (e.target.id==="impfile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>prepImport(t, f.name)); e.target.value=""; }
 });
 document.addEventListener("submit", async e => {
+  if (e.target.closest && e.target.closest("#auth")) return;
   e.preventDefault();
   if (e.target.id==="pasteform"){
     const fd = new FormData(e.target), as = (e.submitter && e.submitter.value) || "lead";
