@@ -1,0 +1,3 @@
+# keep exported client data out of the repository
+data/
+*.csv

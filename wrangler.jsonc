@@ -1,0 +1,9 @@
+// Cloudflare Workers settings for Practice Desk CRM: serve the repository's files as a static site.
+// "name" must match the Worker's name in the Cloudflare dashboard.
+{
+  "name": "practicecmr",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "."
+  }
+}
