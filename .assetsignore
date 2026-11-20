@@ -9,3 +9,4 @@ templates
 netlify.toml
 wrangler.jsonc
 node_modules
+.wrangler
