@@ -159,6 +159,14 @@ code{font-family:var(--font-data);font-size:11.5px;background:var(--sunken);padd
 .drow:first-child{border-top:0}
 .drow select,.drow input,.xrow input,.xrow select{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:5px 6px;width:100%;font-size:13px;min-width:0}
 .xrows{display:flex;flex-direction:column;gap:6px}
+.work{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.wrow{display:grid;grid-template-columns:132px 64px 96px 88px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc desc del" "date qty unit price amt amt";gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.wrow.whead{grid-template-areas:"date qty unit price amt amt";padding:0;border:0;font-size:11.5px;color:var(--muted);font-weight:600}
+.wrow [data-w$=".desc"]{grid-area:desc}.wrow [data-w$=".d"]{grid-area:date}.wrow [data-w$=".q"]{grid-area:qty}.wrow [data-w$=".u"]{grid-area:unit}.wrow [data-w$=".p"]{grid-area:price}.wrow .amt{grid-area:amt;text-align:right}.wrow [data-act="work-del"]{grid-area:del;justify-content:center}
+.wrow.whead span:nth-child(1){grid-area:date}.wrow.whead span:nth-child(2){grid-area:qty}.wrow.whead span:nth-child(3){grid-area:unit}.wrow.whead span:nth-child(4){grid-area:price}.wrow.whead span:nth-child(5){grid-area:amt;text-align:right}
+.wrow input,.wrow select{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:5px 6px;width:100%;font-size:13px;min-width:0}
+.wfoot{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+@media (max-width:760px){.wrow{grid-template-columns:1fr 1fr 1fr 36px;grid-template-areas:"desc desc desc del" "date qty unit unit" "price price amt amt"}.wrow.whead{display:none}}
 .xrow{display:grid;grid-template-columns:130px minmax(0,1fr) 80px auto 28px;gap:6px;align-items:center}
 .xrow:has(select){grid-template-columns:130px minmax(0,1fr) 80px 110px auto 28px}
 .xrow label{display:flex;gap:4px;align-items:center;white-space:nowrap}
@@ -352,6 +360,8 @@ const SCHEMA = {
     {k:"status",l:"Status",t:"select",o:REQ_STATUS,d:"New"},
     {k:"received",l:"Received",t:"date",d:TODAY},{k:"due",l:"Due",t:"date"},
     {k:"assignee",l:"Assigned to"},
+    {k:"work",l:"Work done (billable, excl. VAT)",t:"work",wide:1},
+    {k:"billMonth",l:"Bill in month",t:"month",d:()=>TODAY().slice(0,7)},{k:"invoicedOn",l:"Invoiced on",t:"date"},
     {k:"notes",l:"Notes",t:"textarea",wide:1}]},
   templates:{ one:"contract template", title:r=>r.name||"Contract template", fields:[] },
   formations:{ one:"company formation", title:r=>r.companyName||clientName(r.clientId)||"Company formation", fields:[] }
@@ -384,6 +394,46 @@ function fInvoices(f){
 function getPath(o,p){ return p.split(".").reduce((a,k)=>a==null?a:a[k], o); }
 function setPath(o,p,v){ const ks = p.split("."); let a = o; ks.slice(0,-1).forEach((k,i)=>{ if (a[k]==null) a[k] = /^\d+$/.test(ks[i+1])?[]:{}; a = a[k]; }); a[ks[ks.length-1]] = v; }
 
+// ---------- billable extra work on requests ----------
+const WORK_UNITS = [["h","hours","ur"],["kos","pieces","kos"],["once","one-off","storitev"]];
+const workUnit = (u, lang) => { const x = WORK_UNITS.find(a=>a[0]===u) || WORK_UNITS[0]; return lang==="sl" ? x[2] : x[1]; };
+const rowAmt = w => Math.round((+w.q||0) * (+w.p||0) * 100) / 100;
+const workTotal = r => (r.work||[]).reduce((a,w)=>a+rowAmt(w), 0);
+const reqMonth = r => r.billMonth || String(r.received||r.createdAt||"").slice(0,7);
+const eur2 = n => new Intl.NumberFormat("sl-SI",{style:"currency",currency:"EUR"}).format(+n||0);
+const monthLabel = m => m ? new Date(m+"-01T00:00:00Z").toLocaleDateString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}) : "";
+const prevMonth = () => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-1); return d.toISOString().slice(0,7); };
+const newWorkRow = () => ({d:TODAY(), desc:"", q:1, u:"h", p:+firm.hourly||0});
+function workEditor(r){
+  const rows = r.work || [];
+  return `<fieldset class="f wide work"><legend>Work done (billable, excl. VAT)</legend>
+    ${rows.length?`<div class="wrow whead" aria-hidden="true"><span>Date</span><span>Qty</span><span>Unit</span><span>Price €</span><span>Amount</span></div>`:""}
+    ${rows.map((w,i)=>`<div class="wrow">
+      <input type="date" data-w="work.${i}.d" value="${esc(w.d||"")}" aria-label="Date">
+      <input data-w="work.${i}.desc" value="${esc(w.desc||"")}" placeholder="What was done" aria-label="Description">
+      <input type="number" min="0" step="0.25" data-w="work.${i}.q" data-num="1" value="${esc(w.q??"")}" aria-label="Quantity">
+      <select data-w="work.${i}.u" aria-label="Unit">${WORK_UNITS.map(([v,l])=>`<option value="${v}" ${w.u===v?"selected":""}>${l}</option>`).join("")}</select>
+      <input type="number" min="0" step="0.01" data-w="work.${i}.p" data-num="1" value="${esc(w.p??"")}" aria-label="Price per unit (€)">
+      <span class="mono amt" data-amt="${i}">${eur2(rowAmt(w))}</span>
+      <button type="button" class="btn small" data-act="work-del" data-i="${i}" aria-label="Remove row">✕</button></div>`).join("")}
+    <div class="wfoot"><button type="button" class="btn small" data-act="work-add">+ Add row</button><span>Total <b class="mono" id="worktotal">${eur2(workTotal(r))}</b></span></div>
+  </fieldset>`;
+}
+function workRows(month){
+  return state.requests.filter(r=>!r.example && reqMonth(r)===month && (r.work||[]).length).flatMap(r=>{
+    const c = byId("clients", r.clientId) || {};
+    return r.work.filter(w=>rowAmt(w)).map(w=>({r, c, w, client: c.name || r.from || "", amt: rowAmt(w)}));
+  }).sort((a,b)=>a.client.localeCompare(b.client) || String(a.w.d).localeCompare(String(b.w.d)));
+}
+function workCsv(month){
+  const head = ["Stranka","Davčna številka","Datum","Zahteva","Opis dela","Količina","Enota","Cena brez DDV","Znesek brez DDV","Status","Zaračunano"];
+  const n = v => String(v).replace(".",",");
+  const rows = workRows(month).map(x=>[x.client, x.c.taxNo||"", x.w.d||"", x.r.subject||"", x.w.desc||"", n(+x.w.q||0), workUnit(x.w.u,"sl"), n(+x.w.p||0), n(x.amt), x.r.status||"", x.r.invoicedOn||""]);
+  const total = rows.reduce((a,x)=>a+parseFloat(String(x[8]).replace(",",".")),0);
+  rows.push(["SKUPAJ","","","","","","","",n(Math.round(total*100)/100),"",""]);
+  return toCsvRows([head,...rows]);
+}
+
 function riskOf(r){
   const sel = r.factors||[];
   let score = FACTORS.reduce((s,[,lbl,w]) => s + (sel.includes(lbl)?w:0), 0);
@@ -400,7 +450,7 @@ const state = Object.fromEntries(COLLS.map(c=>[c,[]]));
 let firm = structuredClone(DEFAULT_FIRM);
 let db = null, mcp = null, sample = null, downloads = null, fileArgs = false;
 let ctClient = "";
-let mode = "connecting", view = "overview", filter = {q:"",status:"open"}, drawer = null, comp = null, importPreview = null, setupDirty = false;
+let mode = "connecting", view = "overview", filter = {q:"",status:"open",month:""}, drawer = null, comp = null, importPreview = null, setupDirty = false;
 const scan = {status:"idle", msg:"", items:[], at:null};
 const clientName = id => (state.clients.find(c=>c.id===id)||{}).name || "";
 const byId = (coll,id) => state[coll].find(x=>x.id===id);
@@ -1055,13 +1105,25 @@ function vAml(){
 }
 
 function vRequests(){
-  const rs = state.requests.filter(r=>match(r,["subject","from","client","type","assignee"]))
+  const months = [...new Set([TODAY().slice(0,7), prevMonth(), ...state.requests.map(reqMonth).filter(Boolean)])].sort().reverse();
+  const msel = `<select id="rmonth" aria-label="Month"><option value="">All months</option>${months.map(m=>`<option value="${m}" ${filter.month===m?"selected":""}>${monthLabel(m)}</option>`).join("")}</select>`;
+  const rs = state.requests.filter(r=>match(r,["subject","from","client","type","assignee"])).filter(r=>!filter.month || reqMonth(r)===filter.month)
     .filter(r=> filter.status==="all" ? true : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
     .sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
   const pr = {Urgent:"bad",High:"warn",Normal:"",Low:""}, st = {New:"acc","In progress":"","Waiting on client":"warn",Done:"ok"};
   const sel = `<select id="status" aria-label="Status filter">${[["open","Open"],["all","All"],...REQ_STATUS.map(s=>[s,s])].map(([v,l])=>`<option value="${v}" ${filter.status===v?"selected":""}>${l}</option>`).join("")}</select>`;
-  return header("Requests", "Everything clients ask for: documents, tax questions, payroll changes, confirmations. Log them from Gmail or by hand. Sorted by due date.", "requests", search("Search requests")+sel+exportBtn("requests")) +
-  (rs.length?`<div class="tablewrap"><table><thead><tr><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th></tr></thead><tbody>
+  let summary = "";
+  if (filter.month) {
+    const wr = workRows(filter.month), by = {};
+    wr.forEach(x=>{ const k = x.client || "—"; (by[k] ||= {n:0, amt:0, open:0}); by[k].n++; by[k].amt += x.amt; if (!x.r.invoicedOn) by[k].open += x.amt; });
+    const tot = wr.reduce((a,x)=>a+x.amt,0), open = Object.values(by).reduce((a,x)=>a+x.open,0);
+    summary = `<section class="panel" style="margin-bottom:16px"><div class="head" style="margin:0 0 8px"><div><h2 style="margin:0">Extra work in ${monthLabel(filter.month)}</h2><p class="sub" style="margin:0">${wr.length} priced row${wr.length===1?"":"s"} · total <b class="mono">${eur2(tot)}</b> excl. VAT${open && open!==tot?` · not yet invoiced <b class="mono">${eur2(open)}</b>`:""}</p></div>
+      <div class="tools"><button class="btn primary" data-act="work-export" ${wr.length?"":"disabled"}>Export month (CSV)</button><button class="btn" data-act="work-invoiced" ${open?"":"disabled"}>Mark month as invoiced</button></div></div>
+      ${wr.length?`<div class="tablewrap"><table style="min-width:0"><thead><tr><th>Client</th><th class="num">Rows</th><th class="num">Amount</th><th>Invoiced</th></tr></thead><tbody>${Object.entries(by).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${v.n}</td><td class="num">${eur2(v.amt)}</td><td>${v.open?`<span class="pill warn">${eur2(v.open)} open</span>`:`<span class="pill ok">Yes</span>`}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No priced work in this month yet. Open a request and add rows under “Work done”.</p>`}
+    </section>`;
+  }
+  return header("Requests", "Everything clients ask for and the extra work you do for them. Add priced rows under “Work done”, then pick a month to see and export what to bill.", "requests", search("Search requests")+msel+sel+exportBtn("requests")) + summary +
+  (rs.length?`<div class="tablewrap"><table><thead><tr><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th><th class="num">Work €</th></tr></thead><tbody>
   ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0">
     <td><b>${esc(r.subject)}</b>${exTag(r)}<span class="sec">${esc(r.channel||"")}${r.gmailUrl?" · from Gmail":""}</span></td>
     <td>${esc(clientName(r.clientId)||r.from||"—")}</td><td>${esc(r.type||"")}</td>
@@ -1069,7 +1131,7 @@ function vRequests(){
     <td><span class="pill ${st[r.status]||""}">${esc(r.status||"New")}</span></td>
     <td class="num">${fmtDate(r.received)}</td>
     <td class="num">${r.status==="Done"?fmtDate(r.due):dueChip(daysUntil(r.due), r.due)}</td>
-    <td>${esc(r.assignee||"—")}</td></tr>`).join("")}
+    <td>${esc(r.assignee||"—")}</td><td class="num">${workTotal(r)?eur2(workTotal(r))+(r.invoicedOn?' <span class="pill ok" title="Invoiced">✓</span>':""):"—"}</td></tr>`).join("")}
   </tbody></table></div>`:`<div class="empty"><b>${state.requests.length?"No requests match this filter":"No requests logged"}</b>${state.requests.length?"Try “All” in the status filter.":"Log client emails from the Gmail inbox, or add calls and portal messages with “New request”."}</div>`);
 }
 
@@ -1133,6 +1195,7 @@ function vSetup(){
     <p class="sub" style="margin:0 0 12px">Neither app can be reached directly from this page, so the link works through files. Export creates a semicolon-separated CSV (UTF-8) that both apps' partner and Excel imports accept; check the column mapping once on first import. Import reads a partner list exported from your app and adds or updates clients by tax number.</p>
     <div class="tools">
       <button class="btn" data-act="acc-partners">Export clients as partners</button>
+      <label class="btn" style="gap:6px">Month <input type="month" id="billmonth" value="${TODAY().slice(0,7)}" style="border:0;background:transparent;font:inherit;padding:0"></label>
       <button class="btn" data-act="acc-billing">Export monthly billing list</button>
       <label class="btn" for="impfile">Import partner list (CSV)…</label><input type="file" id="impfile" accept=".csv,text/csv,.txt" hidden>
     </div>
@@ -1155,9 +1218,8 @@ function partnersCsv(){
   const rows = state.clients.filter(c=>c.status!=="Offboarded" && !c.example).map(c=>[c.name,c.address,c.postcode,c.city,c.country||"Slovenija",c.taxNo,c.regNo,c.vatPayer==="No"?"NE":"DA",c.email,c.phone,c.iban,firm.payDays,c.contact]);
   return toCsvRows([head,...rows]);
 }
-function billingCsv(){
+function billingCsv(per = TODAY().slice(0,7)){
   const head = ["Naziv","Davčna številka","Storitev","Količina","Enota","Cena brez DDV","Stopnja DDV","Obdobje"];
-  const per = new Date().toISOString().slice(0,7);
   const rows = [];
   state.clients.filter(c=>c.status==="Active" && !c.example).forEach(c=>{
     if (+c.fee) rows.push([c.name,c.taxNo,"Računovodske storitve "+per,1,"kos",String(c.fee).replace(".",","),firm.vatPayer==="No"?0:firm.vatRate,per]);
@@ -1165,6 +1227,7 @@ function billingCsv(){
   state.formations.filter(f=>!f.example).forEach(f=>{ const c = byId("clients", f.clientId) || {};
     fInvoices(f).forEach(i=>rows.push([c.name||f.companyName,c.taxNo||"",i.what,1,"kos",String(i.amt).replace(".",","),i.noVat?0:(firm.vatPayer==="No"?0:firm.vatRate),per]));
   });
+  workRows(per).filter(x=>!x.r.invoicedOn).forEach(x=>rows.push([x.client, x.c.taxNo||"", x.w.desc || x.r.subject || "Dodatne storitve", String(+x.w.q||0).replace(".",","), workUnit(x.w.u,"sl"), String(+x.w.p||0).replace(".",","), firm.vatPayer==="No"?0:firm.vatRate, per]));
   return toCsvRows([head,...rows]);
 }
 function parseCsv(text){
@@ -1224,6 +1287,7 @@ function fieldHtml(f, r){
   if (f.show && !f.show(r)) return "";
   const cls = "f" + (f.wide?" wide":"");
   if (f.t==="risk"){ const k = riskOf(r); return `<div class="riskbox" id="riskbox"><span>Risk score <b class="mono">${k.score}</b> · <span class="pill ${riskTone(k.level)}">${k.level} risk</span></span><span style="font-size:12px;color:var(--muted)">Suggested: ${k.cdd} CDD, review in ${k.months} months <button type="button" class="btn small" data-act="apply-risk">Apply</button></span></div>`; }
+  if (f.t==="work") return workEditor(r);
   if (f.t==="checks") { const sel = r[f.k]||[]; return `<fieldset class="${cls}"><legend>${f.l}</legend><div class="checks">${f.o.map((o,i)=>`<label><input type="checkbox" name="${f.k}" value="${esc(o)}" id="${id}_${i}" ${sel.includes(o)?"checked":""}> ${esc(o)}</label>`).join("")}</div></fieldset>`; }
   let input;
   if (f.t==="select") input = `<select id="${id}" name="${f.k}">${f.d!==undefined?"":`<option value=""></option>`}${f.o.map(o=>{const [val,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${v===val?"selected":""}>${esc(l)}</option>`;}).join("")}</select>`;
@@ -1258,7 +1322,7 @@ function renderDrawer(){
 function readForm(){
   const form = document.getElementById("form"); if (!form) return drawer.rec; const r = drawer.rec;
   for (const f of SCHEMA[drawer.coll].fields){
-    if (f.t==="risk") continue;
+    if (f.t==="risk" || f.t==="work") continue;
     if (f.t==="checks") { if (form.querySelector(`[name="${f.k}"]`)) r[f.k] = [...form.querySelectorAll(`[name="${f.k}"]:checked`)].map(i=>i.value); continue; }
     const el = form.elements[f.k]; if (!el) continue;
     r[f.k] = f.t==="number" ? (el.value===""?"":+el.value) : el.value.trim();
@@ -1784,7 +1848,7 @@ async function compPdf(){
 function toCsv(coll){
   const fields = SCHEMA[coll].fields.filter(f=>f.t!=="risk");
   const head = fields.map(f=>f.l); if (coll==="aml") head.push("Risk level","Risk score");
-  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
+  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):f.t==="work"?String(workTotal(r)).replace(".",","):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
   return toCsvRows([head,...rows]);
 }
 async function offer(filename, data){
@@ -1855,7 +1919,14 @@ async function act(el){
   else if (a==="backup"){ offer(`practice-desk-backup-${TODAY()}.json`, new Blob([exportBackup()], {type:"application/json"})); }
   else if (a==="load-templates"){ try { const d = JSON.parse(document.getElementById("default-templates").textContent); for (const [tid, t] of Object.entries(d)) await save("templates", {...t, id:tid}); toast("Default templates loaded"); } catch(e){ toast("Couldn't load templates"); } }
   else if (a==="acc-partners"){ offer(`partnerji-${TODAY()}.csv`, partnersCsv()); }
-  else if (a==="acc-billing"){ offer(`obracun-${TODAY().slice(0,7)}.csv`, billingCsv()); }
+  else if (a==="acc-billing"){ const m = (document.getElementById("billmonth")||{}).value || TODAY().slice(0,7); offer(`obracun-${m}.csv`, billingCsv(m)); }
+  else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
+  else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
+  else if (a==="work-export"){ const m = filter.month || prevMonth(); if (!workRows(m).length){ toast(`No priced work in ${monthLabel(m)}`); return; } offer(`dodatno-delo-${m}.csv`, workCsv(m)); }
+  else if (a==="work-invoiced"){ const m = filter.month; const rs = state.requests.filter(r=>reqMonth(r)===m && workTotal(r) && !r.invoicedOn);
+    if (!rs.length){ toast("Nothing left to mark as invoiced"); return; }
+    if (!confirm(`Mark ${rs.length} request${rs.length>1?"s":""} with work in ${monthLabel(m)} as invoiced today?`)) return;
+    for (const r of rs) await save("requests", {...r, invoicedOn:TODAY()}); toast("Marked as invoiced"); }
   else if (a==="imp-apply"){ applyImport(); }
   else if (a==="imp-cancel"){ importPreview=null; render(); }
 }
@@ -1892,6 +1963,12 @@ document.addEventListener("input", e => {
     else if (t.id==="c_purpose") { comp.purpose = t.value; fillEmail(); const b=document.getElementById("c_body"); if (b) b.value = comp.body; }
     clearTimeout(prevT); prevT = setTimeout(refreshPaper, 250); return;
   }
+  if (drawer && drawer.coll==="requests" && t.dataset.w){
+    setPath(drawer.rec, t.dataset.w, t.dataset.num ? (t.value===""?"":+t.value) : t.value);
+    const i = t.dataset.w.split(".")[1], a = document.querySelector(`[data-amt="${i}"]`); if (a) a.textContent = eur2(rowAmt(drawer.rec.work[+i]));
+    const tot = document.getElementById("worktotal"); if (tot) tot.textContent = eur2(workTotal(drawer.rec));
+    return;
+  }
   if (drawer && (drawer.coll==="formations"||drawer.coll==="templates") && t.dataset.p){
     const v = t.dataset.check ? (t.checked?TODAY():"") : t.dataset.num ? (t.value===""?"":+t.value) : t.value;
     setPath(drawer.rec, t.dataset.p, t.dataset.p==="onHold" ? !!v : v);
@@ -1915,6 +1992,7 @@ document.addEventListener("change", e => {
     return;
   }
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
+  if (e.target.id==="rmonth"){ filter.month = e.target.value; if (filter.month) filter.status = "all"; render(); }
   if (e.target.id==="ct_client"){ ctClient = e.target.value; render(); }
   if (e.target.dataset.docstatus){ const d = byId("documents", e.target.dataset.docstatus); if (d) save("documents", {...d, status:e.target.value}).then(()=>toast("Status updated")).catch(err=>toast("Couldn't save: "+(err.code||err))); }
   if (e.target.id==="restorefile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>importBackup(t, f.name)); e.target.value=""; }
@@ -1958,6 +2036,11 @@ document.addEventListener("submit", async e => {
   const miss = S.fields.find(f=>f.req && !r[f.k]);
   if (miss){ toast(`${miss.l} is required`); const el=document.getElementById("f_"+miss.k); if (el) el.focus(); return; }
   if (drawer.coll==="aml"){ const k = riskOf(r); r.riskLevel = k.level; r.riskScore = k.score; if (!r.nextReview) r.nextReview = addMonths(r.date||TODAY(), k.months); }
+  if (drawer.coll==="requests") {
+    const bad = (r.work||[]).findIndex(w=>!String(w.desc||"").trim());
+    if (bad>=0){ toast("Describe the work in each row, or remove the empty row"); const el = document.querySelector(`[data-w="work.${bad}.desc"]`); if (el) el.focus(); return; }
+    if (!r.billMonth) r.billMonth = String(r.received||TODAY()).slice(0,7);
+  }
   if (drawer.coll==="requests" && !r.due && r.received) r.due = addDays(r.received, r.priority==="Urgent"?1:r.priority==="High"?3:7);
   const coll = drawer.coll, isNew = drawer.isNew, after = drawer.after;
   try { await save(coll, r); drawer=null; renderDrawer(); if (after) await after(r); render(); toast(isNew?`${S.one[0].toUpperCase()+S.one.slice(1)} added`:"Saved"); }
