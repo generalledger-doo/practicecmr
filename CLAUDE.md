@@ -30,8 +30,15 @@ clients (name, `email`, `noticeEmail`, `otherEmails`, `contact`), leads, request
 ### 2. Read the mail
 
 Search both received and **sent** mail for the period, e.g.
-`after:2026/11/01 -category:promotions -category:social` and `in:sent after:2026/11/01`.
-Read a thread's text only when the subject and snippet are not enough to decide.
+`after:2026/11/01 -category:promotions -category:social -category:forums -in:sent` and
+`in:sent after:2026/11/01`, with pageSize 50 and view THREAD_VIEW_SUMMARY, following pageToken to the end.
+Read a thread's text (get_thread, PLAIN_TEXT) only when the subject and snippet are not enough to
+decide, to find the client, a case number or a website-form contact. The mailbox gets roughly
+350 threads a week, so for long periods split the work by week.
+
+The client list (company → email addresses) is not in the repository (client data stays out of git):
+it comes from the user's backup, from the scheduled task's prompt, or from `data/client-emails.json`
+in the current session.
 
 ### 3. Decide what each thread is
 
@@ -76,7 +83,15 @@ If the contact already is a client, make it a request for that client instead. S
 address without the booking heading and form fields are sorted by the normal rules above.
 
 **Ignore** – newsletters, supplier invoices, bank and system notifications, automatic replies,
-internal mail, anything not about a client or prospect.
+internal mail, anything not about a client or prospect. Most of the mailbox is **routine
+bookkeeping documents** clients send for the monthly books: invoices ("Račun", "Faktura",
+"Rechnung", e-računi), scans ("[Scan] …", "scan0399.pdf"), fuel/toll statements (DKV, Eurowag),
+loading orders, CMR, mileage ("Kilometrina"), payroll hours ("Place", "Plate") for the monthly payroll,
+bank statements and payment advices. These are **not** requests – unless the mail also asks for
+something (e.g. "please issue an invoice", "send me a confirmation", "correct this").
+
+One request per **matter**: several threads about the same thing for the same client are one request
+(mention the number of threads in the notes).
 
 **Unsure** – do not guess and do not leave it out: add it with a `review` text saying what to check
 (e.g. "Not sure which company this is for – shared address"). The app shows it in purple with a
