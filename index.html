@@ -324,6 +324,11 @@ const AMLCHECKS = ["ID verified","UBO identified","PEP screened","Sanctions scre
 const REQ_STATUS = ["New","In progress","Waiting on client","Done"];
 const DOC_STATUS = ["Draft in Gmail","Sent","Accepted / signed","Declined"];
 const PROP_STATUS = ["Draft","Sent","Accepted","Declined"];
+const REQ_TYPES = ["Quote request","Company formation","EU licence (GZS)","Work / residence permit","Bank account","Permits / residence","Document request","Tax question","Payroll change","Certificate / confirmation","Invoice issue","Other"];
+const OFFICES = ["GZS","UE (upravna enota)","ZRSZ","FURS","AJPES","ZZZS","Court register","Notary","Bank","Other"];
+// every address a client writes from: main, notices, and the "other emails" list
+const clientEmails = c => [c.email, c.noticeEmail, ...String(c.otherEmails||"").split(/[,;\s]+/)].map(x=>emailOf(x)).filter(Boolean);
+const clientByEmail = em => { em = emailOf(em); return em ? state.clients.find(c=>clientEmails(c).includes(em)) : null; };
 const PROP_LANGS = [["sl","Slovenian"],["en","English"],["bs","Bosnian / Croatian / Serbian"]];
 // units for proposal lines: the quote units plus "per item" (own label) and "% of amount" (with a minimum)
 const PUNITS = [["month","per month","mesečno","mjesečno"],["once","one-off (fixed)","enkratno","jednokratno"],["item","per item","na kos","po komadu"],["hour","per hour","na uro","po satu"],["year","per year","letno","godišnje"],["employee","per employee / month","na zaposlenega mesečno","po zaposlenom mjesečno"],["pct","% of amount","% od zneska","% od iznosa"]];
@@ -339,7 +344,7 @@ const ANNEX_SL = {reg:"Izpis iz poslovnega registra naročnika (apostille + over
 const DEFAULT_FIRM = {name:"",address:"",postcode:"",city:"Ljubljana",taxNo:"",regNo:"",iban:"",email:"",phone:"",signatory:"",vatPayer:"Yes",vatRate:22,validDays:30,payDays:8,noticeMonths:3,docDeadline:8,hourly:70,court:"Celje",
   packages:[DEFAULT_PACKAGE],
   prices:{"Bookkeeping":{p:150,u:"month"},"Payroll":{p:15,u:"employee"},"VAT returns":{p:40,u:"month"},"Annual accounts":{p:450,u:"year"},"Corporate tax":{p:250,u:"year"},"Personal tax":{p:120,u:"year"},"Advisory":{p:60,u:"hour"},"Company formation":{p:4000,u:"once"},"Bank account opening":{p:0,u:"once"},"Registered address":{p:0,u:"month"},"EORI & import VAT":{p:0,u:"once"},"Work & residence permits":{p:0,u:"once"}},
-  formQuery:'subject:(povpraševanje OR "kontaktni obrazec" OR "contact form" OR inquiry OR enquiry)',
+  formQuery:'subject:("rezervacija posveta" OR povpraševanje OR "kontaktni obrazec" OR "contact form" OR inquiry OR enquiry) OR "S spletne strani"',
   inboxQuery:"in:inbox newer_than:14d -category:promotions -category:social -category:updates -category:forums",
   aiSort:"Yes"};
 
@@ -367,6 +372,7 @@ const SCHEMA = {
     {k:"contact",l:"Legal representative"},{k:"contactRole",l:"Representative's position"},
     {k:"email",l:"Email",t:"email"},{k:"phone",l:"Phone",t:"tel"},
     {k:"noticeName",l:"Contact for notices (name)"},{k:"noticeEmail",l:"Contact for notices (email)",t:"email"},
+    {k:"otherEmails",l:"Other emails (personal, directors, accountants – separate with commas)",wide:1},
     {k:"lang",l:"Document language",t:"select",o:LANGS,d:"sl"},
     {k:"status",l:"Status",t:"select",o:["Onboarding","Active","Paused","Offboarded"],d:"Onboarding"},
     {k:"fee",l:"Monthly fee (€)",t:"number"},{k:"employees",l:"Employees",t:"number"},{k:"since",l:"Client since",t:"date"},
@@ -390,12 +396,14 @@ const SCHEMA = {
     {k:"subject",l:"Subject",req:1,wide:1},
     {k:"clientId",l:"Client (if existing)",t:"client"},{k:"from",l:"From (name or email)"},
     {k:"channel",l:"Channel",t:"select",o:["Email","Phone","Client portal","In person","Post"],d:"Email"},
-    {k:"type",l:"Type",t:"select",o:["Quote request","Company formation","Bank account","Permits / residence","Document request","Tax question","Payroll change","Certificate / confirmation","Invoice issue","Other"]},
+    {k:"type",l:"Type",t:"select",o:REQ_TYPES},
     {k:"priority",l:"Priority",t:"select",o:["Low","Normal","High","Urgent"],d:"Normal"},
     {k:"status",l:"Status",t:"select",o:REQ_STATUS,d:"New"},
     {k:"received",l:"Received",t:"date",d:TODAY},{k:"due",l:"Due",t:"date"},
     {k:"doneOn",l:"Done on",t:"date",show:r=>r.status==="Done"},
     {k:"assignee",l:"Assigned to"},
+    {k:"submittedTo",l:"Submitted to (office)",t:"select",o:OFFICES},{k:"submittedOn",l:"Submitted on",t:"date",show:r=>!!r.submittedTo},
+    {k:"caseRef",l:"Case / reference no.",show:r=>!!r.submittedTo},
     {k:"work",l:"Work done (billable, excl. VAT)",t:"work",wide:1},
     {k:"billMonth",l:"Bill in month",t:"month",d:()=>TODAY().slice(0,7)},{k:"invoicedOn",l:"Invoiced on",t:"date"},
     {k:"notes",l:"Notes",t:"textarea",wide:1}]},
@@ -904,11 +912,23 @@ async function importBackup(text, name){
   let j; try { j = JSON.parse(text); } catch(e){ toast("That file isn't a Practice Desk backup"); return; }
   const d = j && j.data; if (!d || typeof d!=="object") { toast("That file isn't a Practice Desk backup"); return; }
   const n = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
-  if (j.mergeOnly) {
-    // link imported proposals to an existing client with a matching name
-    const linked = [];
-    for (const pr of Object.values(d.proposals||{})) if (pr.matchClient && !pr.clientId) { const c = state.clients.find(c=>String(c.name||"").toLowerCase().includes(String(pr.matchClient).toLowerCase())); if (c) { pr.clientId = c.id; linked.push(c.name); } delete pr.matchClient; }
-    if (!confirm(`Add ${n} record${n===1?"":"s"} from ${name}?${linked.length?`\n\nLinked to your existing client: ${linked.join(", ")}.`:""} Nothing else is changed.`)) return;
+  if (j.mergeOnly || j.addOnly) {
+    // link imported records to existing clients: by any of the client's emails, then by name
+    const linked = new Set(), skipped = [];
+    const findClient = r => { for (const e of [].concat(r.matchEmails||[])) { const c = clientByEmail(e); if (c) return c; }
+      const m = normName(r.matchClient); if (m.length>=4) { const hits = state.clients.filter(c=>{ const cn = normName(c.name); return cn.length>=4 && (cn.includes(m) || m.includes(cn)); }); if (hits.length===1) return hits[0]; } return null; };
+    for (const coll of ["proposals","requests","aml","documents","formations"]) for (const r of Object.values(d[coll]||{})) {
+      if (!r.clientId && (r.matchClient || r.matchEmails)) { const c = findClient(r); if (c) { r.clientId = c.id; linked.add(c.name); } }
+      delete r.matchClient; delete r.matchEmails; }
+    // leads from someone who is already a client are skipped: those belong in requests
+    for (const [id, l] of Object.entries(d.leads||{})) { const c = clientByEmail(l.email); if (c) { skipped.push(`${l.name||l.email} (already client ${c.name})`); delete d.leads[id]; } }
+    // add only: never overwrite something already in Practice Desk (re-importing the same email does nothing)
+    let dup = 0; if (j.addOnly) for (const c of Object.keys(d)) for (const id of Object.keys(d[c]||{})) { const have = (state[c]||[]).some(x=>x.id===id) || (c==="requests" && d[c][id].gmailThreadId && state.requests.some(x=>x.gmailThreadId===d[c][id].gmailThreadId)); if (have) { delete d[c][id]; dup++; } }
+    const n2 = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
+    if (!n2) { toast(dup ? `Nothing new: all ${dup} records are already in Practice Desk` : "Nothing to add"); return; }
+    const parts = COLLS.filter(c=>Object.keys(d[c]||{}).length).map(c=>`${Object.keys(d[c]).length} ${c}`).join(", ");
+    if (!confirm(`Add ${parts} from ${name}?${linked.size?`\n\nLinked to existing clients: ${[...linked].join(", ")}.`:""}${dup?`\n${dup} already in Practice Desk – skipped.`:""}${skipped.length?`\nNot added as leads (already clients): ${skipped.join(", ")}.`:""}\n\nNothing else is changed.`)) return;
+    const n = n2;
     try { if (db && db.load) await db.load(d, true); toast(`Added ${n} record${n===1?"":"s"}`); } catch(e){ toast("Import failed: " + (e.message||e.code||e)); }
     return;
   }
@@ -981,7 +1001,7 @@ async function runScan(){
     const p = await gmail("search_threads", {query:q, pageSize:40});
     const handled = new Set(state.inbox.map(x=>x.id));
     const known = new Set([...state.leads.map(l=>l.gmailThreadId), ...state.requests.map(r=>r.gmailThreadId)].filter(Boolean));
-    const clientsByEmail = Object.fromEntries(state.clients.filter(c=>c.email).map(c=>[c.email.toLowerCase(), c]));
+    const clientsByEmail = Object.fromEntries(state.clients.flatMap(c=>clientEmails(c).map(e=>[e, c])));
     const items = (p.threads||[]).filter(t=>!handled.has(t.id) && !known.has(t.id)).map(t=>{
       const m = (t.messages||[])[0] || {};
       const from = m.sender || "";
@@ -1009,6 +1029,18 @@ ${JSON.stringify(list)}`, {modelTier:"quick"});
 }
 async function markHandled(threadId, status, refId){ try { await save("inbox", {id:threadId, status, refId:refId||"", at:TODAY()}); } catch(e){} scan.items = scan.items.filter(i=>i.id!==threadId); }
 
+// website booking form ("Nova rezervacija posveta"): the sender is the website, the person is in the form
+function parseWebForm(text, subject=""){
+  const t = String(text||"").replace(/\r/g,"");
+  const field = label => { const m = t.match(new RegExp(label + "\\s*:?[ \\t]*([^\\n]*)(?:\\n+[ \\t]*([^\\n]+))?", "i")); if (!m) return ""; const v = (m[1]||"").trim(); return v || (m[2]||"").trim(); };
+  // recognised by content only (the sending address also sends other mail): the booking heading or subject, plus the form fields
+  const marker = /rezervacija (brezplačnega )?posveta|s spletne strani/i.test(subject + "\n" + t);
+  const name = field("Ime in priimek"), contact = field("Kontakt");
+  if (!marker || (!name && !contact)) return null;
+  const email = emailOf(contact), phone = email ? "" : (contact.match(/\+?[\d][\d\s/().-]{5,}\d/)||[""])[0].trim();
+  const lj = field("Jezik strani"), when = field("Čas oddaje");
+  return {name: name || String(subject).replace(/^.*?:\s*/,"").trim(), email, phone, lang: !lj || /sloven/i.test(lj) ? "sl" : "en", langLabel: lj, when};
+}
 async function fromMail(item, as){
   toast("Reading the email…");
   let body = "";
@@ -1027,8 +1059,10 @@ async function fromMail(item, as){
   const link = item.pasted ? {} : {gmailThreadId:item.id, gmailMsgId:item.msgId, gmailUrl:item.url};
   const text = (ex.summary? ex.summary+"\n\n":"") + body.slice(0,2000);
   if (as==="lead") {
-    const isForm = /povpra|obrazec|contact form|inquiry|enquiry/i.test(item.subject);
-    openDrawer("leads", newRecord("leads", {...link, name:ex.name||item.name||item.email, company:ex.company||"", email:item.email, phone:ex.phone||"", services:(ex.services||[]).filter(s=>SERVICES.includes(s)), employees:ex.employees||"", lang:ex.lang==="en"?"en":"sl", source:isForm?"Website form":"Email", nextDate:TODAY(), nextAction:"Reply to enquiry", notes:text}), true, item.pasted ? null : (rec)=>markHandled(item.id,"lead",rec.id));
+    const wf = parseWebForm(body, item.subject);
+    const isForm = !!wf || /povpra|obrazec|contact form|inquiry|enquiry/i.test(item.subject);
+    if (wf) { ex = {...ex, name: wf.name || ex.name, phone: wf.phone || ex.phone, lang: wf.lang, summary: `Booked a free consultation on the website${wf.langLabel?" ("+wf.langLabel+")":""}${wf.when?", "+fmtDate(String(wf.when).slice(0,10)):""}.`}; item = {...item, email: wf.email}; }
+    openDrawer("leads", newRecord("leads", {...link, name:ex.name||item.name||item.email, company:ex.company||"", email:item.email, phone:ex.phone||"", services:(ex.services||[]).filter(s=>SERVICES.includes(s)), employees:ex.employees||"", lang:ex.lang==="en"?"en":"sl", source:isForm?"Website form":"Email", nextDate:TODAY(), nextAction: wf ? "Confirm free consultation (booked on website)" : "Reply to enquiry", notes:(ex.summary&&!text.startsWith(ex.summary)? ex.summary+"\n\n":"")+text}), true, item.pasted ? null : (rec)=>markHandled(item.id,"lead",rec.id));
   } else {
     openDrawer("requests", newRecord("requests", {...link, subject:item.subject||"(no subject)", clientId:item.clientId, from:item.from, received:item.date||TODAY(), notes:text}), true, item.pasted ? null : (rec)=>markHandled(item.id,"request",rec.id));
   }
@@ -1335,7 +1369,7 @@ function vAml(){
 }
 
 function currentRequests(){
-  return state.requests.filter(r=>match(r,["subject","from","client","type","assignee"])).filter(r=>!filter.month || reqMonth(r)===filter.month).filter(r=>!filter.client || r.clientId===filter.client)
+  return state.requests.filter(r=>match(r,["subject","from","client","type","assignee","submittedTo","caseRef","notes"])).filter(r=>!filter.month || reqMonth(r)===filter.month).filter(r=>!filter.client || r.clientId===filter.client)
     .filter(r=> filter.status==="all" ? true : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
     .sort((a,b)=> filter.month ? String(a.received||"").localeCompare(String(b.received||"")) : (a.due||"9999").localeCompare(b.due||"9999"));
 }
@@ -1362,7 +1396,7 @@ function vRequests(){
   ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0" class="${r.status==="Done"?"done":""}">
     <td class="chk"><input type="checkbox" data-act="req-done" data-id="${r.id}" ${r.status==="Done"?"checked":""} aria-label="${r.status==="Done"?"Done – untick to reopen":"Mark as done"}: ${esc(r.subject)}" title="${r.status==="Done"?"Done"+(r.doneOn?" on "+fmtDate(r.doneOn):"")+" – untick to reopen":"Mark as done"}"></td>
     <td><b>${esc(r.subject)}</b>${exTag(r)}<span class="sec">${esc(r.channel||"")}${r.gmailUrl?" · from Gmail":""}</span></td>
-    <td>${esc(clientName(r.clientId)||r.from||"—")}</td><td>${esc(r.type||"")}</td>
+    <td>${esc(clientName(r.clientId)||r.from||"—")}</td><td>${esc(r.type||"")}${r.submittedTo?`<span class="sec">→ ${esc(r.submittedTo)}${r.caseRef?" · "+esc(r.caseRef):""}</span>`:""}</td>
     <td><span class="pill ${pr[r.priority]||""}">${esc(r.priority||"Normal")}</span></td>
     <td><span class="pill ${st[r.status]||""}">${esc(r.status||"New")}</span></td>
     <td class="num">${fmtDate(r.received)}</td>
@@ -2268,7 +2302,7 @@ document.addEventListener("change", e => {
     return;
   }
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
-  if ((e.target.id==="f_status" || e.target.id==="f_clientId") && drawer && (drawer.coll==="requests" || drawer.coll==="proposals")){ readForm(); renderDrawer(); }
+  if ((e.target.id==="f_status" || e.target.id==="f_clientId" || e.target.id==="f_submittedTo") && drawer && (drawer.coll==="requests" || drawer.coll==="proposals")){ readForm(); renderDrawer(); }
   if (e.target.id==="pstatus"){ filter.pstatus = e.target.value; render(); }
   if (e.target.dataset && e.target.dataset.bool && drawer && drawer.coll==="proposals"){ drawer.rec && setPath(drawer.rec, e.target.dataset.l, e.target.checked); const tot = document.getElementById("proptotal"); if (tot) tot.innerHTML = groupTotalText(drawer.rec); }
   if (e.target.id==="rclient"){ filter.client = e.target.value; render(); }
@@ -2286,7 +2320,7 @@ document.addEventListener("submit", async e => {
     const fd = new FormData(e.target), as = (e.submitter && e.submitter.value) || "lead";
     const from = String(fd.get("from")||"").trim(), subject = String(fd.get("subject")||"").trim(), body = String(fd.get("body")||"").trim();
     if (!from && !body){ toast("Paste the sender or the message first"); return; }
-    const em = emailOf(from), cl = em && state.clients.find(c=>(c.email||"").toLowerCase()===em);
+    const em = emailOf(from), cl = em && clientByEmail(em);
     const item = {id:"", from, email:em, name:nameOf(from) || (em ? "" : from), subject, snippet:body, date:TODAY(), clientId:cl?cl.id:"", pasted:true};
     e.target.reset(); fromMail(item, as);
     return;
