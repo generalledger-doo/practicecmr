@@ -70,6 +70,7 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute
 .banner{background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .banner[data-tone=info]{background:var(--accent-soft);color:var(--accent)}
 .banner[data-tone=bad]{background:var(--bad-soft);color:var(--bad)}
+.banner[data-tone=chk]{background:var(--chk-soft);color:var(--fg);border-left:4px solid var(--chk)}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px;text-align:left;cursor:pointer}
 .kpi:hover{border-color:var(--accent)}
@@ -866,6 +867,28 @@ function attachStore(){
   for (const coll of COLLS) db.collection(coll).onSnapshot(snap => { state[coll] = snap.docs.map(d => ({id:d.id, ...d.data()})); render(); });
   db.collection("settings").doc("firm").onSnapshot(s => { if (setupDirty) return; if (s.exists) { firm = {...structuredClone(DEFAULT_FIRM), ...s.data()}; firm.prices = {...DEFAULT_FIRM.prices, ...(s.data().prices||{})}; } if (view==="setup" && document.activeElement && document.activeElement.closest && document.activeElement.closest("#firmform")) return; render(); });
 }
+// ---------- drop box: imports the email-sorting agent queued in Supabase ----------
+let agentQueue = [];
+async function loadQueue(){
+  if (!sb || mode!=="online") return;
+  const {data, error} = await sb.from("import_queue").select("id,created_at,summary,payload").eq("status","pending").order("id");
+  if (error) return; // table not set up yet: nothing to show
+  agentQueue = data || []; render();
+}
+function queueBanner(){
+  if (!agentQueue.length || !["overview","requests","leads"].includes(view)) return "";
+  return agentQueue.map(q=>{ const d = (q.payload||{}).data||{}, nr = Object.keys(d.requests||{}).length, nl = Object.keys(d.leads||{}).length;
+    return `<div class="banner" data-tone="chk"><span><b>From your email</b> (${fmtDate(String(q.created_at).slice(0,10))}): ${nr} request${nr===1?"":"s"}${nl?`, ${nl} lead${nl===1?"":"s"}`:""}${q.summary?` – ${esc(q.summary)}`:""}</span>
+      <button class="btn small primary" data-act="queue-add" data-id="${q.id}">Review and add</button><button class="btn small" data-act="queue-dismiss" data-id="${q.id}">Dismiss</button></div>`; }).join("");
+}
+async function queueHandle(id, status){
+  const q = agentQueue.find(x=>String(x.id)===String(id)); if (!q) return;
+  const {data:u} = await sb.auth.getUser();
+  const {error} = await sb.from("import_queue").update({status, handled_by: u && u.user ? u.user.id : null, handled_at: new Date().toISOString()}).eq("id", q.id);
+  if (error) { toast("Couldn't update the drop box: " + error.message); return; }
+  agentQueue = agentQueue.filter(q=>String(q.id)!==String(id)); render();
+}
+
 function startOnline(){
   if (db) return;
   db = supaDb(); mode = "online"; setSync("Loading…");
@@ -873,6 +896,9 @@ function startOnline(){
   if (who) who.innerHTML = `<span>${esc(me.name||me.email)}</span> · <a href="#" data-signout>Sign out</a>`;
   attachStore();
   db.ready.catch(e => setSync("Couldn't load: " + (e.message||e.code)));
+  db.ready.then(loadQueue).catch(()=>{});
+  setInterval(loadQueue, 10*60*1000);
+  window.addEventListener("focus", () => loadQueue());
 }
 const loadScript = src => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = () => rej(new Error("couldn't load " + src)); document.head.appendChild(el); });
 async function bootOnline(){
@@ -995,13 +1021,12 @@ async function importBackup(text, name){
     // add only: never overwrite something already in Practice Desk (re-importing the same email does nothing)
     let dup = 0; if (j.addOnly) for (const c of Object.keys(d)) for (const id of Object.keys(d[c]||{})) { const have = (state[c]||[]).some(x=>x.id===id) || (c==="requests" && d[c][id].gmailThreadId && state.requests.some(x=>x.gmailThreadId===d[c][id].gmailThreadId)); if (have) { delete d[c][id]; dup++; } }
     const n2 = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
-    if (!n2) { toast(dup||already ? `Nothing new: ${dup+already} already in Practice Desk` : "Nothing to add"); return; }
+    if (!n2) { toast(dup||already ? `Nothing new: ${dup+already} already in Practice Desk` : "Nothing to add"); return "done"; }
     const flagged = COLLS.reduce((s,c)=>s+Object.values(d[c]||{}).filter(x=>x.review).length, 0);
     const parts = COLLS.filter(c=>Object.keys(d[c]||{}).length).map(c=>`${Object.keys(d[c]).length} ${c}`).join(", ");
-    if (!confirm(`Add ${parts} from ${name}?${linked.size?`\n\nLinked to existing clients: ${[...linked].join(", ")}.`:""}${dup?`\n${dup} already imported before – skipped.`:""}${already?`\n${already} already written in Requests / Leads – skipped.`:""}${flagged?`\n${flagged} marked purple “Check” for you to verify.`:""}${skipped.length?`\nNot added as leads (already clients): ${skipped.join(", ")}.`:""}\n\nNothing else is changed.`)) return;
+    if (!confirm(`Add ${parts} from ${name}?${linked.size?`\n\nLinked to existing clients: ${[...linked].join(", ")}.`:""}${dup?`\n${dup} already imported before – skipped.`:""}${already?`\n${already} already written in Requests / Leads – skipped.`:""}${flagged?`\n${flagged} marked purple “Check” for you to verify.`:""}${skipped.length?`\nNot added as leads (already clients): ${skipped.join(", ")}.`:""}\n\nNothing else is changed.`)) return "cancel";
     const n = n2;
-    try { if (db && db.load) await db.load(d, true); toast(`Added ${n} record${n===1?"":"s"}`); } catch(e){ toast("Import failed: " + (e.message||e.code||e)); }
-    return;
+    try { if (db && db.load) await db.load(d, true); toast(`Added ${n} record${n===1?"":"s"}`); return "done"; } catch(e){ toast("Import failed: " + (e.message||e.code||e)); return "error"; }
   }
   const replace = confirm(`Restore ${n} records from ${name}?\n\nOK = replace everything currently in Practice Desk with the backup.\nCancel = choose whether to merge instead.`);
   if (!replace && !confirm("Merge the backup into your current records instead? Records with the same id are overwritten by the backup.")) return;
@@ -1157,6 +1182,10 @@ function render(){
   if (focus !== null) { const q = document.getElementById("q"); if (q){ q.focus(); q.setSelectionRange(focus,focus);} }
 }
 function banner(){
+  if (mode==="online" && agentQueue.length) { const q = queueBanner(); if (q) return q + bannerRest(); }
+  return bannerRest();
+}
+function bannerRest(){
   if (mode==="local") return `<div class="banner">Changes on this screen aren't being saved because this browser blocks local storage (private window or blocked site data). Open the page in a normal window, or in Claude while signed in.</div>`;
   let out = "";
   if (mode==="browser" && view==="overview") out += `<div class="banner" data-tone="info">Your records are saved in this browser on this computer only. Download a backup regularly under Firm &amp; accounting → Backup. <a class="btn small" href="#setup">Backup</a></div>`;
@@ -2295,6 +2324,8 @@ async function act(el){
   else if (a==="req-pdf"){ const rs = currentRequests(); const cl = filter.client ? byId("clients", filter.client) : null; const sl = !cl || cl.lang!=="en";
     printDoc(requestsPdfHtml(rs, sl), `zahtevki${filter.month?"-"+filter.month:""}${cl?"-"+cl.name.replace(/[^\p{L}\p{N}._-]+/gu,"_").slice(0,40):""}.pdf`); }
   else if (a==="review-ok"){ if (!drawer) return; readForm(); const coll = drawer.coll, r = {...drawer.rec, review:""}; try { await save(coll, r); drawer.rec = r; renderDrawer(); toast("Verified"); } catch(e){ toast("Couldn't save: " + (e.code||e)); } }
+  else if (a==="queue-add"){ const q = agentQueue.find(x=>String(x.id)===String(id)); if (!q) return; const res = await importBackup(JSON.stringify(q.payload), "your email"); if (res==="done") await queueHandle(id, "imported"); }
+  else if (a==="queue-dismiss"){ if (!confirm("Dismiss this batch from email? Nothing is added; it stays in the drop box as dismissed.")) return; await queueHandle(id, "dismissed"); toast("Dismissed"); }
   else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
   else if (a==="year-export"){ const y = filter.year || TODAY().slice(0,4); offer(`zahtevki-${y}.csv`, yearCsv(y)); }
