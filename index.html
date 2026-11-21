@@ -165,6 +165,23 @@ tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-throug
 .yearpanel{margin-top:16px}.ytable{min-width:640px}.ytable th.bar,.ytable td.bar{width:22%}
 .ytable tr[data-month]{cursor:pointer}.ytable tr[data-month]:hover td{background:var(--sunken)}.ytable tr.empty td{color:var(--muted)}.ytable tr.cur td:first-child{font-weight:600}
 .ytable tfoot th{border-top:2px solid var(--line);font-weight:600;text-align:left;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg);background:var(--surface);padding:10px 14px}.ytable tfoot th.num{font-family:var(--font-data);font-size:13px}
+.wrow.lrow{grid-template-columns:72px 160px 104px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc del" "qty unit price amt amt"}
+.wrow.lrow.whead{grid-template-areas:"qty unit price amt amt"}
+@media (max-width:760px){.wrow.lrow{grid-template-columns:1fr 1fr 1fr 36px;grid-template-areas:"desc desc desc del" "qty unit unit unit" "price price amt amt"}}
+.lrow [data-l$=".s"]{grid-area:desc}.lrow [data-l$=".q"]{grid-area:qty}.lrow [data-l$=".u"]{grid-area:unit}.lrow [data-l$=".p"]{grid-area:price}
+.wrow.lrow.whead span:nth-child(1){grid-area:qty}.wrow.lrow.whead span:nth-child(2){grid-area:unit}.wrow.lrow.whead span:nth-child(3){grid-area:price}.wrow.lrow.whead span:nth-child(4){grid-area:amt;text-align:right}
+.agreedchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.agreed{background:var(--sunken);border-radius:var(--r);padding:10px 12px;gap:8px}.agreed .lbl{font-size:12px;font-weight:600;color:var(--muted)}
+.agreed .sub{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+table.mini{min-width:0;background:transparent}table.mini td{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);font-size:13px}table.mini td.sec{color:var(--muted);font-size:12px}
+.printhost{position:fixed;left:-10000px;top:0}
+.printdoc{width:186mm;background:#fff;color:#1a1a1a;font-family:Calibri,Arial,sans-serif;font-size:10.5pt;line-height:1.35}
+.printdoc .ph{display:flex;justify-content:space-between;gap:16px;font-size:9pt;color:#444;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:14px}.printdoc .ph .r{text-align:right}
+.printdoc h1{font-size:16pt;margin:0 0 4px;font-family:Georgia,serif}.printdoc .meta{color:#444;margin:0 0 12px;font-size:9.5pt}
+.printdoc table{width:100%;min-width:0;border-collapse:collapse;background:#fff}.printdoc th{background:#eee;color:#333;font-size:8.5pt;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:5px 6px;border-bottom:1px solid #999}
+.printdoc td{padding:5px 6px;border-bottom:1px solid #ddd;vertical-align:top;font-size:10pt;color:#1a1a1a}.printdoc td .s{color:#666;font-size:9pt}.printdoc .n{text-align:right;white-space:nowrap}
+.printdoc tr.w td{color:#555;font-size:9pt;border-bottom:1px dotted #ddd;padding-top:2px;padding-bottom:2px}.printdoc tr.w td:first-child{padding-left:14px}
+.printdoc tfoot td{font-weight:bold;border-top:2px solid #999;border-bottom:0}
 .work{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
 .wrow{display:grid;grid-template-columns:132px 64px 96px 88px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc desc del" "date qty unit price amt amt";gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .wrow.whead{grid-template-areas:"date qty unit price amt amt";padding:0;border:0;font-size:11.5px;color:var(--muted);font-weight:600}
@@ -246,6 +263,7 @@ tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-throug
     <a href="#leads" data-v="leads">Leads <span class="count" data-c="leads"></span></a>
     <a href="#clients" data-v="clients">Clients <span class="count" data-c="clients"></span></a>
     <a href="#formations" data-v="formations">Formations <span class="count" data-c="formations"></span></a>
+    <a href="#proposals" data-v="proposals">Proposals <span class="count" data-c="proposals"></span></a>
     <a href="#contracts" data-v="contracts">Contracts</a>
     <a href="#aml" data-v="aml">AML checks <span class="count" data-c="aml"></span></a>
     <a href="#requests" data-v="requests">Requests <span class="count" data-c="requests"></span></a>
@@ -300,6 +318,7 @@ const FACTORS = [["country","High-risk country",3],["pep","PEP involved",3],["ca
 const AMLCHECKS = ["ID verified","UBO identified","PEP screened","Sanctions screened","Source of funds documented","Purpose of relationship recorded"];
 const REQ_STATUS = ["New","In progress","Waiting on client","Done"];
 const DOC_STATUS = ["Draft in Gmail","Sent","Accepted / signed","Declined"];
+const PROP_STATUS = ["Draft","Sent","Accepted","Declined"];
 const DOC_TYPES = {quote:{l:"Quote",p:"P"},agreement:{l:"Accounting agreement",p:"POG"},formation:{l:"Formation agreement",p:"SA"},docrequest:{l:"Document request",p:"DOC"},aml:{l:"AML questionnaire",p:"AML"},contract:{l:"Contract",p:"C"}};
 const LANGS = [["sl","Slovenian"],["en","English"]];
 
@@ -370,6 +389,13 @@ const SCHEMA = {
     {k:"work",l:"Work done (billable, excl. VAT)",t:"work",wide:1},
     {k:"billMonth",l:"Bill in month",t:"month",d:()=>TODAY().slice(0,7)},{k:"invoicedOn",l:"Invoiced on",t:"date"},
     {k:"notes",l:"Notes",t:"textarea",wide:1}]},
+  proposals:{ one:"proposal", title:r=>[r.number, clientName(r.clientId)||r.party].filter(Boolean).join(" · "), fields:[
+    {k:"number",l:"Number",d:()=>nextNumber("quote")},{k:"status",l:"Status",t:"select",o:PROP_STATUS,d:"Sent"},
+    {k:"clientId",l:"Client",t:"client"},{k:"party",l:"Or prospect (name / company)"},
+    {k:"date",l:"Date sent",t:"date",d:TODAY},{k:"validUntil",l:"Valid until",t:"date",d:()=>addDays(TODAY(), +firm.validDays||30)},
+    {k:"lang",l:"Language",t:"select",o:LANGS,d:"sl"},{k:"decidedOn",l:"Accepted / declined on",t:"date",show:r=>r.status==="Accepted"||r.status==="Declined"},
+    {k:"lines",l:"Prices offered (excl. VAT)",t:"lines",wide:1},
+    {k:"notes",l:"Notes / conditions",t:"textarea",wide:1}]},
   templates:{ one:"contract template", title:r=>r.name||"Contract template", fields:[] },
   formations:{ one:"company formation", title:r=>r.companyName||clientName(r.clientId)||"Company formation", fields:[] }
 };
@@ -412,18 +438,20 @@ const monthLabel = m => m ? new Date(m+"-01T00:00:00Z").toLocaleDateString("en-G
 const prevMonth = () => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-1); return d.toISOString().slice(0,7); };
 const newWorkRow = () => ({d:TODAY(), desc:"", q:1, u:"h", p:+firm.hourly||0});
 function workEditor(r){
-  const rows = r.work || [];
+  const rows = r.work || [], ap = agreedPrices(r.clientId);
   return `<fieldset class="f wide work"><legend>Work done (billable, excl. VAT)</legend>
     ${rows.length?`<div class="wrow whead" aria-hidden="true"><span>Date</span><span>Qty</span><span>Unit</span><span>Price €</span><span>Amount</span></div>`:""}
     ${rows.map((w,i)=>`<div class="wrow">
       <input type="date" data-w="work.${i}.d" value="${esc(w.d||"")}" aria-label="Date">
-      <input data-w="work.${i}.desc" value="${esc(w.desc||"")}" placeholder="What was done" aria-label="Description">
+      <input data-w="work.${i}.desc" list="agreed-list" value="${esc(w.desc||"")}" placeholder="What was done" aria-label="Description">
       <input type="number" min="0" step="0.25" data-w="work.${i}.q" data-num="1" value="${esc(w.q??"")}" aria-label="Quantity">
       <select data-w="work.${i}.u" aria-label="Unit">${WORK_UNITS.map(([v,l])=>`<option value="${v}" ${w.u===v?"selected":""}>${l}</option>`).join("")}</select>
       <input type="number" min="0" step="0.01" data-w="work.${i}.p" data-num="1" value="${esc(w.p??"")}" aria-label="Price per unit (€)">
       <span class="mono amt" data-amt="${i}">${eur2(rowAmt(w))}</span>
       <button type="button" class="btn small" data-act="work-del" data-i="${i}" aria-label="Remove row">✕</button></div>`).join("")}
+    <datalist id="agreed-list">${ap.map(a=>`<option value="${esc(a.s)}">${esc(eur2(a.p)+" / "+unitLabel(a.u,"en"))}</option>`).join("")}</datalist>
     <div class="wfoot"><button type="button" class="btn small" data-act="work-add">+ Add row</button><span>Total <b class="mono" id="worktotal">${eur2(workTotal(r))}</b></span></div>
+    ${ap.length?`<div class="agreedchips"><span class="sub">Agreed prices:</span>${ap.map((a,i)=>`<button type="button" class="btn small" data-act="work-add-agreed" data-i="${i}">+ ${esc(a.s)} · ${eur2(a.p)}/${esc(unitToWork(a.u)==="h"?"h":unitLabel(a.u,"en"))}</button>`).join("")}</div>`:""}
   </fieldset>`;
 }
 function workRows(period){
@@ -441,6 +469,105 @@ function workCsv(month){
   return toCsvRows([head,...rows]);
 }
 
+// ---------- proposals and agreed client prices ----------
+const lineAmt = l => Math.round((+l.q||0) * (+l.p||0) * 100) / 100;
+const propTotals = r => { const t = {monthly:0, once:0, year:0, hour:[]}; (r.lines||[]).forEach(l=>{ const a = lineAmt(l); if (l.u==="month"||l.u==="employee") t.monthly += a; else if (l.u==="year") t.year += a; else if (l.u==="hour") t.hour.push(l); else t.once += a; }); return t; };
+const propClientId = r => r.clientId || ((byId("leads", r.leadId)||{}).clientId) || "";
+const propExpired = r => r.status==="Sent" && r.validUntil && r.validUntil < TODAY();
+function agreedPrices(clientId){
+  if (!clientId) return [];
+  const out = {};
+  state.proposals.filter(r=>r.status==="Accepted" && propClientId(r)===clientId).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+    .forEach(r=>(r.lines||[]).forEach(l=>{ if (l.s) out[l.s.trim().toLowerCase()] = {...l, from:r.number, date:r.date, propId:r.id}; }));
+  return Object.values(out).sort((a,b)=>a.s.localeCompare(b.s));
+}
+const unitToWork = u => u==="hour" ? "h" : u==="once" ? "once" : "kos";
+function linesEditor(r){
+  const rows = r.lines || [], t = propTotals(r);
+  const svc = [...new Set([...pkgs().map(p=>p.name), ...SERVICES])];
+  return `<fieldset class="f wide work"><legend>Prices offered (excl. VAT)</legend>
+    <datalist id="svc-list">${svc.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+    ${rows.length?`<div class="wrow lrow whead" aria-hidden="true"><span>Qty</span><span>Unit</span><span>Price €</span><span>Amount</span></div>`:""}
+    ${rows.map((l,i)=>`<div class="wrow lrow">
+      <input data-l="lines.${i}.s" list="svc-list" value="${esc(l.s||"")}" placeholder="Service (e.g. Bookkeeping, Payroll)" aria-label="Service">
+      <input type="number" min="0" step="0.25" data-l="lines.${i}.q" data-num="1" value="${esc(l.q??"")}" aria-label="Quantity">
+      <select data-l="lines.${i}.u" aria-label="Unit">${UNITS.map(([v,en])=>`<option value="${v}" ${l.u===v?"selected":""}>${en}</option>`).join("")}</select>
+      <input type="number" min="0" step="0.01" data-l="lines.${i}.p" data-num="1" value="${esc(l.p??"")}" aria-label="Price (€)">
+      <span class="mono amt" data-lamt="${i}">${eur2(lineAmt(l))}</span>
+      <button type="button" class="btn small" data-act="line-del" data-i="${i}" aria-label="Remove row">✕</button></div>`).join("")}
+    <div class="wfoot"><button type="button" class="btn small" data-act="line-add">+ Add service</button><span id="proptotal">${propTotalText(t)}</span></div>
+  </fieldset>`;
+}
+const propTotalText = t => [t.monthly?`Monthly <b class="mono">${eur2(t.monthly)}</b>`:"", t.year?`Yearly <b class="mono">${eur2(t.year)}</b>`:"", t.once?`One-off <b class="mono">${eur2(t.once)}</b>`:"", t.hour.length?`${t.hour.length} hourly rate${t.hour.length>1?"s":""}`:""].filter(Boolean).join(" · ") || "No prices yet";
+function agreedHtml(clientId){
+  const ap = agreedPrices(clientId), props = state.proposals.filter(r=>propClientId(r)===clientId).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if (!props.length) return `<div class="f wide agreed"><span class="lbl">Agreed prices</span><span class="sub">No proposals yet. <button type="button" class="btn small" data-act="prop-new" data-client="${clientId}">New proposal</button></span></div>`;
+  return `<div class="f wide agreed"><span class="lbl">Agreed prices (from accepted proposals)</span>
+    ${ap.length?`<table class="mini"><tbody>${ap.map(a=>`<tr><td>${esc(a.s)}</td><td class="num">${eur2(a.p)}</td><td>${esc(unitLabel(a.u,"en"))}${+a.q!==1?` × ${a.q}`:""}</td><td class="sec">${esc(a.from||"")}</td></tr>`).join("")}</tbody></table>`:`<span class="sub">No accepted proposal yet.</span>`}
+    <span class="sub">Proposals: ${props.map(r=>`<a href="#" data-act="open" data-coll="proposals" data-id="${r.id}">${esc(r.number||"—")}</a> <span class="pill ${propTone(r)}">${esc(propExpired(r)?"Expired":r.status)}</span>`).join(" · ")} <button type="button" class="btn small" data-act="prop-new" data-client="${clientId}">New proposal</button></span></div>`;
+}
+const propTone = r => propExpired(r) ? "warn" : ({Draft:"", Sent:"acc", Accepted:"ok", Declined:"bad"})[r.status] || "";
+async function recordQuote(c){
+  if (c.type!=="quote") return;
+  const ex = state.proposals.find(x=>x.number===c.number);
+  const rec = {...(ex||{id:uid()}), number:c.number, status:(ex&&ex.status!=="Draft")?ex.status:"Sent", date:c.date, validUntil:addDays(c.date, +firm.validDays||30), lang:c.lang,
+    clientId: c.coll==="clients" ? c.id : (ex&&ex.clientId)||"", leadId: c.coll==="leads" ? c.id : (ex&&ex.leadId)||"", party:c.party.name||"",
+    lines:(c.items||[]).map(i=>({s:i.s, q:+i.q||0, u:i.u, p:+i.p||0})), notes:c.notes||((ex&&ex.notes)||"")};
+  try { await save("proposals", rec); } catch(e){}
+}
+
+// ---------- PDF from a simple HTML page (request lists, proposals) ----------
+async function printDoc(html, filename){
+  if (!window.html2pdf) { toast("The PDF tool didn't load. Check your connection and reload."); return; }
+  const host = document.createElement("div"); host.className = "printhost";
+  const doc = document.createElement("div"); doc.className = "printdoc"; doc.innerHTML = html; host.appendChild(doc);
+  document.body.appendChild(host);
+  try {
+    const blob = await window.html2pdf().set({margin:[12,12,14,12], image:{type:"jpeg",quality:0.97}, html2canvas:{scale:2,backgroundColor:"#ffffff"}, jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}, pagebreak:{mode:["css","legacy"], avoid:["tr",".keep"]}}).from(doc).outputPdf("blob");
+    await downloads.save({filename, data:blob}); toast("Saved " + filename);
+  } catch(e){ if (!e || e.code!=="cancelled") toast("Couldn't make the PDF: " + (e.message||e.code||e)); }
+  finally { host.remove(); }
+}
+const firmHead = () => `<div class="ph"><div><b>${esc(firm.name||"")}</b><br>${esc([firm.address, [firm.postcode, firm.city].filter(Boolean).join(" ")].filter(Boolean).join(", "))}${firm.taxNo?`<br>ID za DDV / Tax no.: ${esc(firm.taxNo)}`:""}</div><div class="r">${esc(firm.email||"")}<br>${esc(firm.phone||"")}</div></div>`;
+function requestsPdfHtml(rs, sl){
+  const F = sl ? fmtDateSl : fmtDate;
+  const T = sl ? {t:"Seznam zahtevkov", per:"Obdobje", all:"vsi meseci", cl:"Stranka", st:"Status", made:"Pripravljeno", rq:"Zahtevek", rec:"Prejeto", due:"Rok / opravljeno", work:"Delo €", tot:"Skupaj dodatno delo (brez DDV)", none:"Ni zahtevkov.", done:"opravljeno", n:"Število zahtevkov"} :
+                  {t:"Requests", per:"Period", all:"all months", cl:"Client", st:"Status", made:"Prepared", rq:"Request", rec:"Received", due:"Due / done", work:"Work €", tot:"Total extra work (excl. VAT)", none:"No requests.", done:"done", n:"Number of requests"};
+  const cn = filter.client ? clientName(filter.client) : "";
+  const total = rs.reduce((a,r)=>a+workTotal(r),0);
+  const rows = rs.map(r=>`<tr class="keep"><td>${F(r.received)}</td><td><b>${esc(r.subject)}</b>${r.type?`<br><span class="s">${esc(r.type)}</span>`:""}</td>${cn?"":`<td>${esc(clientName(r.clientId)||r.from||"")}</td>`}<td>${esc(sl ? (REQ_STATUS_SL[r.status]||r.status||"") : (r.status||""))}</td><td>${r.status==="Done"?`${T.done} ${F(r.doneOn)}`:F(r.due)}</td><td class="n">${workTotal(r)?eur2(workTotal(r)):""}</td></tr>
+    ${(r.work||[]).map(w=>`<tr class="w keep"><td>${F(w.d)}</td><td colspan="${cn?3:4}">${esc(w.desc)} · ${String(+w.q||0).replace(".",",")} ${esc(workUnit(w.u, sl?"sl":"en"))} × ${eur2(w.p)}</td><td class="n">${eur2(rowAmt(w))}</td></tr>`).join("")}`).join("");
+  return `${firmHead()}<h1>${T.t}</h1>
+    <p class="meta">${T.per}: <b>${filter.month?esc(monthLabelL(filter.month, sl)):T.all}</b>${cn?` · ${T.cl}: <b>${esc(cn)}</b>`:""}${filter.status && filter.status!=="all"?` · ${T.st}: ${esc(filter.status==="open"?(sl?"odprti":"open"):(sl?(REQ_STATUS_SL[filter.status]||filter.status):filter.status))}`:""} · ${T.n}: ${rs.length} · ${T.made}: ${F(TODAY())}</p>
+    ${rs.length?`<table><thead><tr><th>${T.rec}</th><th>${T.rq}</th>${cn?"":`<th>${T.cl}</th>`}<th>${T.st}</th><th>${T.due}</th><th class="n">${T.work}</th></tr></thead><tbody>${rows}</tbody>
+    ${total?`<tfoot><tr><td colspan="${cn?4:5}">${T.tot}</td><td class="n">${eur2(total)}</td></tr></tfoot>`:""}</table>`:`<p>${T.none}</p>`}`;
+}
+const REQ_STATUS_SL = {"New":"Nov","In progress":"V delu","Waiting on client":"Čaka stranko","Done":"Opravljeno"};
+const fmtDateSl = d => d ? (([y,m,dd]) => `${+dd}. ${+m}. ${y}`)(String(d).slice(0,10).split("-")) : "—";
+const monthLabelL = (m, sl) => sl ? new Date(m+"-01T00:00:00Z").toLocaleDateString("sl-SI",{month:"long",year:"numeric",timeZone:"UTC"}) : monthLabel(m);
+function proposalPdfHtml(r){
+  const sl = r.lang!=="en", c = byId("clients", propClientId(r)) || {}, t = propTotals(r), F = sl ? fmtDateSl : fmtDate;
+  const T = sl ? {t:"Ponudba", no:"Št.", dt:"Datum", vu:"Veljavnost do", to:"Za", s:"Storitev", q:"Količina", u:"Enota", p:"Cena", a:"Znesek", m:"Mesečno skupaj", y:"Letno skupaj", o:"Enkratno skupaj", vat:"Cene so brez DDV."} :
+                  {t:"Proposal", no:"No.", dt:"Date", vu:"Valid until", to:"To", s:"Service", q:"Qty", u:"Unit", p:"Price", a:"Amount", m:"Monthly total", y:"Yearly total", o:"One-off total", vat:"Prices exclude VAT."};
+  return `${firmHead()}<h1>${T.t} ${esc(r.number||"")}</h1>
+    <p class="meta">${T.to}: <b>${esc(c.name||r.party||"")}</b>${c.address?`, ${esc(c.address)}, ${esc([c.postcode,c.city].filter(Boolean).join(" "))}`:""} · ${T.dt}: ${F(r.date)}${r.validUntil?` · ${T.vu}: ${F(r.validUntil)}`:""}</p>
+    <table><thead><tr><th>${T.s}</th><th class="n">${T.q}</th><th>${T.u}</th><th class="n">${T.p}</th><th class="n">${T.a}</th></tr></thead><tbody>
+    ${(r.lines||[]).map(l=>`<tr class="keep"><td>${esc(sl ? (SERVICES_SL[l.s]||l.s) : l.s)}</td><td class="n">${String(+l.q||0).replace(".",",")}</td><td>${esc(unitLabel(l.u, sl?"sl":"en"))}</td><td class="n">${eur2(l.p)}</td><td class="n">${eur2(lineAmt(l))}</td></tr>`).join("")}</tbody>
+    <tfoot>${t.monthly?`<tr><td colspan="4">${T.m}</td><td class="n">${eur2(t.monthly)}</td></tr>`:""}${t.year?`<tr><td colspan="4">${T.y}</td><td class="n">${eur2(t.year)}</td></tr>`:""}${t.once?`<tr><td colspan="4">${T.o}</td><td class="n">${eur2(t.once)}</td></tr>`:""}</tfoot></table>
+    <p class="meta">${T.vat}</p>${r.notes?`<p style="white-space:pre-wrap">${esc(r.notes)}</p>`:""}`;
+}
+
+function vProposals(){
+  const st = filter.pstatus || "";
+  const ps = state.proposals.filter(r=>match({...r, clientId:propClientId(r)}, ["number","party","client","status","notes"])).filter(r=>!st || (st==="Expired" ? propExpired(r) : r.status===st))
+    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")) || String(b.number||"").localeCompare(String(a.number||"")));
+  const sel = `<select id="pstatus" aria-label="Status filter"><option value="">All statuses</option>${[...PROP_STATUS,"Expired"].map(s=>`<option ${st===s?"selected":""}>${s}</option>`).join("")}</select>`;
+  return header("Proposals", "Offers sent to clients and prospects, with the prices you quoted. Mark one Accepted and its prices become the client's agreed prices, offered when you log extra work.", "proposals", search("Search proposals")+sel+exportBtn("proposals")) +
+  (ps.length?`<div class="tablewrap"><table><thead><tr><th>Number</th><th>Client / prospect</th><th>Date</th><th>Valid until</th><th>Status</th><th class="num">Monthly</th><th class="num">One-off / yearly</th><th class="num">Services</th></tr></thead><tbody>
+  ${ps.map(r=>{ const t = propTotals(r); return `<tr data-act="open" data-coll="proposals" data-id="${r.id}" tabindex="0"><td class="num"><b>${esc(r.number||"—")}</b></td><td>${esc(clientName(propClientId(r))||r.party||"—")}${!propClientId(r)&&r.leadId?' <span class="pill">Lead</span>':""}</td><td class="num">${fmtDate(r.date)}</td><td class="num">${fmtDate(r.validUntil)}</td><td><span class="pill ${propTone(r)}">${esc(propExpired(r)?"Expired":r.status||"")}</span></td><td class="num">${t.monthly?eur2(t.monthly):"—"}</td><td class="num">${t.once||t.year?eur2(t.once+t.year):"—"}</td><td class="num">${(r.lines||[]).length}</td></tr>`; }).join("")}
+  </tbody></table></div>`:`<div class="empty"><b>${state.proposals.length?"No proposals match":"No proposals yet"}</b>${state.proposals.length?"Change the search or status filter.":"Add one with “New proposal”, or send a quote from a lead or client: quotes sent from Practice Desk are saved here automatically."}</div>`);
+}
+
 function riskOf(r){
   const sel = r.factors||[];
   let score = FACTORS.reduce((s,[,lbl,w]) => s + (sel.includes(lbl)?w:0), 0);
@@ -452,12 +579,12 @@ function riskOf(r){
 const riskTone = l => l==="High"?"bad":l==="Medium"?"warn":"ok";
 
 // ---------- state & store ----------
-const COLLS = ["leads","clients","formations","aml","requests","documents","inbox","templates"];
+const COLLS = ["leads","clients","formations","aml","requests","documents","inbox","templates","proposals"];
 const state = Object.fromEntries(COLLS.map(c=>[c,[]]));
 let firm = structuredClone(DEFAULT_FIRM);
 let db = null, mcp = null, sample = null, downloads = null, fileArgs = false;
 let ctClient = "";
-let mode = "connecting", view = "overview", filter = {q:"",status:"open",month:"",year:""}, drawer = null, comp = null, importPreview = null, setupDirty = false;
+let mode = "connecting", view = "overview", filter = {q:"",status:"open",month:"",year:"",client:"",pstatus:""}, drawer = null, comp = null, importPreview = null, setupDirty = false;
 const scan = {status:"idle", msg:"", items:[], at:null};
 const clientName = id => (state.clients.find(c=>c.id===id)||{}).name || "";
 const byId = (coll,id) => state[coll].find(x=>x.id===id);
@@ -853,11 +980,11 @@ function render(){
   const docsOpen = state.documents.filter(d=>d.status==="Draft in Gmail"||d.status==="Sent").length;
   const mailN = scan.items.filter(i=>i.kind!=="other").length;
   const fActive = state.formations.filter(f=>!(f.dates||{}).completed && !f.onHold).length;
-  const counts = {inbox:mailN||"", leads:openLeads||"", clients:state.clients.length||"", formations:fActive||"", aml:amlDue||"", requests:openReq||"", documents:docsOpen||""};
+  const counts = {inbox:mailN||"", leads:openLeads||"", clients:state.clients.length||"", formations:fActive||"", aml:amlDue||"", requests:openReq||"", documents:docsOpen||"", proposals:state.proposals.filter(x=>x.status==="Sent").length||""};
   document.querySelectorAll("[data-c]").forEach(s => s.textContent = counts[s.dataset.c]);
   if (view==="setup" && main.querySelector("#firmform") && main.contains(document.activeElement) && document.activeElement.matches("input,select,textarea")) return;
   const focus = document.activeElement && document.activeElement.id === "q" ? document.activeElement.selectionStart : null;
-  main.innerHTML = banner() + ({overview:vOverview,inbox:vInbox,leads:vLeads,clients:vClients,formations:vFormations,contracts:vContracts,aml:vAml,requests:vRequests,documents:vDocuments,setup:vSetup}[view])();
+  main.innerHTML = banner() + ({overview:vOverview,inbox:vInbox,leads:vLeads,clients:vClients,formations:vFormations,proposals:vProposals,contracts:vContracts,aml:vAml,requests:vRequests,documents:vDocuments,setup:vSetup}[view])();
   if (focus !== null) { const q = document.getElementById("q"); if (q){ q.focus(); q.setSelectionRange(focus,focus);} }
 }
 function banner(){
@@ -935,6 +1062,7 @@ function vOverview(){
   am.filter(x=>x.missing).forEach(x=>att.push({d:-999,tone:"bad",tag:"AML",t:`${x.client.name}: no AML check on file`,coll:"clients",id:x.client.id,newAml:x.client.id}));
   am.filter(x=>x.due!==null && x.due<=30).forEach(x=>att.push({d:x.due,tone:x.due<0?"bad":"warn",tag:"AML review",t:`${x.client.name}: periodic review`,coll:"aml",id:x.last.id}));
   state.documents.filter(d=>(d.status==="Sent"||d.status==="Draft in Gmail") && daysUntil(d.date)<=-7).forEach(d=>att.push({d:daysUntil(d.date)+300,tone:"warn",tag:DOC_TYPES[d.type]?.l||"Document",t:`${d.party}: no answer since ${fmtDate(d.date)}`,coll:"documents",id:d.id}));
+  state.proposals.filter(r=>r.status==="Sent" && r.validUntil && daysUntil(r.validUntil)<=3).forEach(r=>att.push({d:daysUntil(r.validUntil), tone:daysUntil(r.validUntil)<0?"bad":"warn", tag:"Proposal", t:`${clientName(propClientId(r))||r.party}: ${r.number} ${daysUntil(r.validUntil)<0?"expired":"expires soon"} without an answer`, coll:"proposals", id:r.id}));
   onboarding.forEach(c=>{ const left = ONBOARD.filter(s=>!(c.onboarding||[]).includes(s)); if (left.length) att.push({d:500,tone:"acc",tag:"Onboarding",t:`${c.name}: ${left.length} step${left.length>1?"s":""} left · next: ${left[0]}`,coll:"clients",id:c.id}); });
   state.formations.filter(f=>!(f.dates||{}).completed && !f.onHold).forEach(f=>{
     const n = clientName(f.clientId)||f.companyName||"Formation", d = f.dates||{}, inv = f.inv||{};
@@ -1142,12 +1270,17 @@ function vAml(){
   </tbody></table></div>`:`<div class="empty"><b>No AML checks recorded</b>Send a client the questionnaire, then record the check with “New AML check”. Tick risk factors and the score, suggested CDD level and review date are worked out for you.</div>`);
 }
 
+function currentRequests(){
+  return state.requests.filter(r=>match(r,["subject","from","client","type","assignee"])).filter(r=>!filter.month || reqMonth(r)===filter.month).filter(r=>!filter.client || r.clientId===filter.client)
+    .filter(r=> filter.status==="all" ? true : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
+    .sort((a,b)=> filter.month ? String(a.received||"").localeCompare(String(b.received||"")) : (a.due||"9999").localeCompare(b.due||"9999"));
+}
 function vRequests(){
   const months = [...new Set([TODAY().slice(0,7), prevMonth(), ...state.requests.map(reqMonth).filter(Boolean)])].sort().reverse();
   const msel = `<select id="rmonth" aria-label="Month"><option value="">All months</option>${months.map(m=>`<option value="${m}" ${filter.month===m?"selected":""}>${monthLabel(m)}</option>`).join("")}</select>`;
-  const rs = state.requests.filter(r=>match(r,["subject","from","client","type","assignee"])).filter(r=>!filter.month || reqMonth(r)===filter.month)
-    .filter(r=> filter.status==="all" ? true : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
-    .sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+  const rs = currentRequests();
+  const withReq = [...new Set(state.requests.map(r=>r.clientId).filter(Boolean))].map(id=>byId("clients",id)).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
+  const csel = `<select id="rclient" aria-label="Client"><option value="">All clients</option>${withReq.map(c=>`<option value="${c.id}" ${filter.client===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`;
   const pr = {Urgent:"bad",High:"warn",Normal:"",Low:""}, st = {New:"acc","In progress":"","Waiting on client":"warn",Done:"ok"};
   const sel = `<select id="status" aria-label="Status filter">${[["open","Open"],["all","All"],...REQ_STATUS.map(s=>[s,s])].map(([v,l])=>`<option value="${v}" ${filter.status===v?"selected":""}>${l}</option>`).join("")}</select>`;
   let summary = "";
@@ -1160,7 +1293,7 @@ function vRequests(){
       ${wr.length?`<div class="tablewrap"><table style="min-width:0"><thead><tr><th>Client</th><th class="num">Rows</th><th class="num">Amount</th><th>Invoiced</th></tr></thead><tbody>${Object.entries(by).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${v.n}</td><td class="num">${eur2(v.amt)}</td><td>${v.open?`<span class="pill warn">${eur2(v.open)} open</span>`:`<span class="pill ok">Yes</span>`}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No priced work in this month yet. Open a request and add rows under “Work done”.</p>`}
     </section>`;
   }
-  return header("Requests", "Everything clients ask for and the extra work you do for them. Add priced rows under “Work done”, then pick a month to see and export what to bill.", "requests", search("Search requests")+msel+sel+exportBtn("requests")) + summary +
+  return header("Requests", "Everything clients ask for and the extra work you do for them. Add priced rows under “Work done”, then pick a month to see and export what to bill.", "requests", search("Search requests")+msel+csel+sel+`<button class="btn" data-act="req-pdf" ${rs.length?"":"disabled"}>Print PDF</button>`+exportBtn("requests")) + summary +
   (rs.length?`<div class="tablewrap"><table><thead><tr><th class="chk"><span class="sr">Done</span></th><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th><th class="num">Work €</th></tr></thead><tbody>
   ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0" class="${r.status==="Done"?"done":""}">
     <td class="chk"><input type="checkbox" data-act="req-done" data-id="${r.id}" ${r.status==="Done"?"checked":""} aria-label="${r.status==="Done"?"Done – untick to reopen":"Mark as done"}: ${esc(r.subject)}" title="${r.status==="Done"?"Done"+(r.doneOn?" on "+fmtDate(r.doneOn):"")+" – untick to reopen":"Mark as done"}"></td>
@@ -1327,6 +1460,7 @@ function fieldHtml(f, r){
   const cls = "f" + (f.wide?" wide":"");
   if (f.t==="risk"){ const k = riskOf(r); return `<div class="riskbox" id="riskbox"><span>Risk score <b class="mono">${k.score}</b> · <span class="pill ${riskTone(k.level)}">${k.level} risk</span></span><span style="font-size:12px;color:var(--muted)">Suggested: ${k.cdd} CDD, review in ${k.months} months <button type="button" class="btn small" data-act="apply-risk">Apply</button></span></div>`; }
   if (f.t==="work") return workEditor(r);
+  if (f.t==="lines") return linesEditor(r);
   if (f.t==="checks") { const sel = r[f.k]||[]; return `<fieldset class="${cls}"><legend>${f.l}</legend><div class="checks">${f.o.map((o,i)=>`<label><input type="checkbox" name="${f.k}" value="${esc(o)}" id="${id}_${i}" ${sel.includes(o)?"checked":""}> ${esc(o)}</label>`).join("")}</div></fieldset>`; }
   let input;
   if (f.t==="select") input = `<select id="${id}" name="${f.k}">${f.d!==undefined?"":`<option value=""></option>`}${f.o.map(o=>{const [val,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${v===val?"selected":""}>${esc(l)}</option>`;}).join("")}</select>`;
@@ -1346,6 +1480,8 @@ function renderDrawer(){
   let extra = "";
   if (saved && drawer.coll==="leads") extra = docBtn("quote","Send quote") + (r.stage==="won" && !r.clientId ? `<button type="button" class="btn" data-act="convert" data-id="${r.id}">Convert to client</button>` : "");
   if (saved && drawer.coll==="clients") { const fm = state.formations.find(x=>x.clientId===r.id); extra = docBtn("quote","Quote") + `<button type="button" class="btn" data-act="contracts-for" data-id="${r.id}">Contracts</button>` + docBtn("aml","AML questionnaire") + `<button type="button" class="btn" data-act="new" data-coll="aml" data-client="${r.id}">Record AML check</button>` + (fm ? `<button type="button" class="btn" data-act="open" data-coll="formations" data-id="${fm.id}">Company formation</button>` : `<button type="button" class="btn" data-act="new" data-coll="formations" data-client="${r.id}">Start company formation</button>`); }
+  if (saved && drawer.coll==="proposals") extra = `<button type="button" class="btn" data-act="prop-pdf">Save PDF</button>` + (r.status!=="Accepted" ? `<button type="button" class="btn" data-act="prop-accept">Mark accepted</button>` : "");
+  if (saved && drawer.coll==="leads") extra += `<button type="button" class="btn" data-act="prop-new" data-lead="${r.id}">New proposal</button>`;
   if (saved && drawer.coll==="aml" && r.clientId) extra = `<button type="button" class="btn" data-act="compose" data-type="aml" data-coll="clients" data-id="${r.clientId}">Send questionnaire</button>`;
   const docs = saved ? state.documents.filter(d=>d.refId===r.id) : [];
   o.innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle">
@@ -1353,6 +1489,7 @@ function renderDrawer(){
     <form id="form" novalidate>
       ${extra?`<div class="gm tools">${extra}</div>`:""}
       ${docs.length?`<div class="gm">Documents: ${docs.map(d=>`${esc(d.number)} (${esc(d.status)})`).join(", ")}</div>`:""}
+      ${saved && drawer.coll==="clients" ? agreedHtml(r.id) : ""}
       ${S.fields.map(f=>fieldHtml(f,r)).join("")}</form>
     <footer><div class="r">${drawer.isNew?"":drawer.confirm?`<span class="confirm">Delete for good? <button type="button" class="btn small danger" data-act="delete-yes">Delete</button><button type="button" class="btn small" data-act="delete-no">Keep</button></span>`:`<button type="button" class="btn danger" data-act="delete">Delete</button>`}</div>
     <div class="r"><button type="button" class="btn" data-act="close">Cancel</button><button type="submit" form="form" class="btn primary">Save</button></div></footer></aside>`;
@@ -1361,7 +1498,7 @@ function renderDrawer(){
 function readForm(){
   const form = document.getElementById("form"); if (!form) return drawer.rec; const r = drawer.rec;
   for (const f of SCHEMA[drawer.coll].fields){
-    if (f.t==="risk" || f.t==="work") continue;
+    if (f.t==="risk" || f.t==="work" || f.t==="lines") continue;
     if (f.t==="checks") { if (form.querySelector(`[name="${f.k}"]`)) r[f.k] = [...form.querySelectorAll(`[name="${f.k}"]:checked`)].map(i=>i.value); continue; }
     const el = form.elements[f.k]; if (!el) continue;
     r[f.k] = f.t==="number" ? (el.value===""?"":+el.value) : el.value.trim();
@@ -1378,8 +1515,9 @@ function newRecord(coll, preset={}){
 const nf = lang => new Intl.NumberFormat(lang==="sl"?"sl-SI":"en-IE",{minimumFractionDigits:2,maximumFractionDigits:2});
 const dfmt = (d,lang) => d ? new Date(d+"T00:00:00Z").toLocaleDateString(lang==="sl"?"sl-SI":"en-GB",lang==="sl"?{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"UTC"}:{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}) : "";
 function nextNumber(type){
-  const y = new Date().getFullYear(), p = DOC_TYPES[type].p;
-  const n = state.documents.filter(d=>d.type===type && String(d.number||"").startsWith(`${p}-${y}-`)).length + 1;
+  const y = new Date().getFullYear(), p = DOC_TYPES[type].p, pre = `${p}-${y}-`;
+  const used = [...state.documents.filter(d=>d.type===type), ...(type==="quote" ? state.proposals : [])].map(d=>String(d.number||"")).filter(x=>x.startsWith(pre)).map(x=>parseInt(x.slice(pre.length),10)||0);
+  const n = Math.max(0, ...used) + 1;
   return `${p}-${y}-${String(n).padStart(3,"0")}`;
 }
 function partyOf(coll, rec){
@@ -1864,6 +2002,7 @@ async function compDraft(){
       if (c.type==="docrequest") { upd.docs = structuredClone(rec.docs||{}); ANNEX.forEach(([k])=>{ const d = upd.docs[k]||{}; if ((d.status||"Missing")==="Missing") upd.docs[k] = {...d, status:"Requested"}; }); }
       await save("formations", upd);
     }
+    await recordQuote(c);
     if (c.type==="quote" && c.coll==="leads" && rec && ["new","contacted","meeting"].includes(rec.stage)) await save("leads", {...rec, stage:"proposal", fee: monthlyOf(c.items)||rec.fee, nextDate:addDays(TODAY(),7), nextAction:"Follow up on quote "+c.number});
     if (c.type==="agreement" && rec && c.coll==="clients" && +c.fee && !rec.fee) await save("clients", {...rec, fee:+c.fee});
     comp = null; renderDrawer();
@@ -1878,7 +2017,7 @@ async function compDraft(){
 async function compPdf(){
   const c = comp; if (!downloads){ c.msg = "Saving files isn't available in this view."; renderComposer(); return; }
   const paperHtml = document.getElementById("paper").innerHTML;
-  try { const blob = await makePdf(); await downloads.save({filename:fileName(c), data:blob}); c.msg = "PDF saved."; }
+  try { const blob = await makePdf(); await downloads.save({filename:fileName(c), data:blob}); c.msg = "PDF saved." + (c.type==="quote" ? " Saved under Proposals." : ""); await recordQuote(c); }
   catch(e){ c.msg = e && e.code==="cancelled" ? "" : "Couldn't save the PDF: " + (e.message||e.code||e); }
   renderComposer(); document.getElementById("paper").innerHTML = paperHtml;
 }
@@ -1887,7 +2026,7 @@ async function compPdf(){
 function toCsv(coll){
   const fields = SCHEMA[coll].fields.filter(f=>f.t!=="risk");
   const head = fields.map(f=>f.l); if (coll==="aml") head.push("Risk level","Risk score");
-  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):f.t==="work"?String(workTotal(r)).replace(".",","):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
+  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):f.t==="work"?String(workTotal(r)).replace(".",","):f.t==="lines"?(r.lines||[]).map(l=>`${l.s} ${String(+l.q||0).replace(".",",")} × ${String(+l.p||0).replace(".",",")} € ${unitLabel(l.u,"sl")}`).join(" | "):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
   return toCsvRows([head,...rows]);
 }
 async function offer(filename, data){
@@ -1930,6 +2069,7 @@ async function act(el){
     const isF = /formation/i.test(l.inquiry||"");
     const c = newRecord("clients",{name:l.company||l.name,contact:l.name,email:l.email||"",phone:l.phone||"",services:l.services||[],fee:isF&&l.inquiry==="Company formation"?"":(l.fee||""),employees:l.employees||"",lang:l.lang||"sl",country:l.country||"Slovenija",since:TODAY(),notes:l.notes?`From lead: ${l.notes}`:"",leadId:l.id,gmailUrl:l.gmailUrl||""});
     try { await save("clients", c); await save("leads", {...l, stage:"won", clientId:c.id});
+      for (const pr of state.proposals.filter(x=>x.leadId===l.id && !x.clientId)) await save("proposals", {...pr, clientId:c.id});
       if (isF) { const q = state.documents.filter(d=>d.refId===l.id && d.type==="quote").sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0];
         const fm = newFormation({clientId:c.id, proposalDate:q?q.date:"", activities:""}); if (l.fee && l.inquiry==="Company formation") fm.fee = +l.fee;
         await save("formations", fm); toast("Client and company formation created. Fill in the client's registration details, then send the formation agreement."); openDrawer("clients", c, false); }
@@ -1963,6 +2103,15 @@ async function act(el){
     const done = r.status!=="Done";
     try { await save("requests", done ? {...r, status:"Done", doneOn:TODAY(), statusBefore:r.status||"New"} : {...r, status:(r.statusBefore && r.statusBefore!=="Done") ? r.statusBefore : "In progress", doneOn:""});
       toast(done ? `Done: ${r.subject}` : `Reopened: ${r.subject}`); } catch(err){ toast("Couldn't save: "+(err.code||err)); } }
+  else if (a==="line-add"){ readForm(); (drawer.rec.lines ||= []).push({s:"", q:1, u:"month", p:0}); renderDrawer(); const ins = document.querySelectorAll(".lrow:not(.whead) input[data-l$='.s']"); if (ins.length) ins[ins.length-1].focus(); }
+  else if (a==="line-del"){ readForm(); drawer.rec.lines.splice(+el.dataset.i, 1); renderDrawer(); }
+  else if (a==="work-add-agreed"){ readForm(); const ag = agreedPrices(drawer.rec.clientId)[+el.dataset.i]; if (ag){ (drawer.rec.work ||= []).push({d:TODAY(), desc:ag.s, q:1, u:unitToWork(ag.u), p:+ag.p||0}); renderDrawer(); } }
+  else if (a==="prop-new"){ comp=null; const pre = el.dataset.client ? {clientId:el.dataset.client, lang:(byId("clients",el.dataset.client)||{}).lang||"sl"} : el.dataset.lead ? (()=>{ const l = byId("leads", el.dataset.lead)||{}; return {leadId:l.id, party:l.company||l.name||"", lang:l.lang||"sl", lines:(l.services||[]).map(s=>{ const pr = priceOf(s); return {s, q: pr.u==="employee"?(+l.employees||1):1, u:pr.u, p:+pr.p||0}; })}; })() : {};
+    openDrawer("proposals", newRecord("proposals", pre), true); }
+  else if (a==="prop-pdf"){ readForm(); const r = drawer.rec; printDoc(proposalPdfHtml(r), `${(r.number||"ponudba").replace(/[^\w.-]+/g,"_")}_${(clientName(propClientId(r))||r.party||"").replace(/[^\p{L}\p{N}._-]+/gu,"_").slice(0,40)}.pdf`); }
+  else if (a==="prop-accept"){ readForm(); drawer.rec.status = "Accepted"; drawer.rec.decidedOn = drawer.rec.decidedOn || TODAY(); renderDrawer(); toast("Marked accepted. Save to keep it."); }
+  else if (a==="req-pdf"){ const rs = currentRequests(); const cl = filter.client ? byId("clients", filter.client) : null; const sl = !cl || cl.lang!=="en";
+    printDoc(requestsPdfHtml(rs, sl), `zahtevki${filter.month?"-"+filter.month:""}${cl?"-"+cl.name.replace(/[^\p{L}\p{N}._-]+/gu,"_").slice(0,40):""}.pdf`); }
   else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
   else if (a==="year-export"){ const y = filter.year || TODAY().slice(0,4); offer(`zahtevki-${y}.csv`, yearCsv(y)); }
@@ -2009,8 +2158,18 @@ document.addEventListener("input", e => {
     else if (t.id==="c_purpose") { comp.purpose = t.value; fillEmail(); const b=document.getElementById("c_body"); if (b) b.value = comp.body; }
     clearTimeout(prevT); prevT = setTimeout(refreshPaper, 250); return;
   }
+  if (drawer && drawer.coll==="proposals" && t.dataset.l){
+    setPath(drawer.rec, t.dataset.l, t.dataset.num ? (t.value===""?"":+t.value) : t.value);
+    const i = +t.dataset.l.split(".")[1], l = drawer.rec.lines[i];
+    if (t.dataset.l.endsWith(".s")) { const pr = priceOf(t.value); if ((SERVICES.includes(t.value) || pkgs().some(p=>p.name===t.value)) && !+l.p) { l.p = +pr.p||0; l.u = pr.u; const row = t.closest(".wrow"); row.querySelector('[data-l$=".p"]').value = l.p; row.querySelector('[data-l$=".u"]').value = l.u; } }
+    const a = document.querySelector(`[data-lamt="${i}"]`); if (a) a.textContent = eur2(lineAmt(l));
+    const tot = document.getElementById("proptotal"); if (tot) tot.innerHTML = propTotalText(propTotals(drawer.rec));
+    return;
+  }
   if (drawer && drawer.coll==="requests" && t.dataset.w){
     setPath(drawer.rec, t.dataset.w, t.dataset.num ? (t.value===""?"":+t.value) : t.value);
+    if (t.dataset.w.endsWith(".desc")) { const i = +t.dataset.w.split(".")[1], ag = agreedPrices(drawer.rec.clientId).find(a=>a.s===t.value);
+      if (ag) { const w = drawer.rec.work[i]; w.p = +ag.p||0; w.u = unitToWork(ag.u); const row = t.closest(".wrow"); row.querySelector('[data-w$=".p"]').value = w.p; row.querySelector('[data-w$=".u"]').value = w.u; } }
     const i = t.dataset.w.split(".")[1], a = document.querySelector(`[data-amt="${i}"]`); if (a) a.textContent = eur2(rowAmt(drawer.rec.work[+i]));
     const tot = document.getElementById("worktotal"); if (tot) tot.textContent = eur2(workTotal(drawer.rec));
     return;
@@ -2038,7 +2197,9 @@ document.addEventListener("change", e => {
     return;
   }
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
-  if (e.target.id==="f_status" && drawer && drawer.coll==="requests"){ readForm(); renderDrawer(); }
+  if ((e.target.id==="f_status" || e.target.id==="f_clientId") && drawer && (drawer.coll==="requests" || drawer.coll==="proposals")){ readForm(); renderDrawer(); }
+  if (e.target.id==="pstatus"){ filter.pstatus = e.target.value; render(); }
+  if (e.target.id==="rclient"){ filter.client = e.target.value; render(); }
   if (e.target.id==="ovyear"){ filter.year = e.target.value; render(); }
   if (e.target.id==="rmonth"){ filter.month = e.target.value; if (filter.month) filter.status = "all"; render(); }
   if (e.target.id==="ct_client"){ ctClient = e.target.value; render(); }
@@ -2084,6 +2245,12 @@ document.addEventListener("submit", async e => {
   const miss = S.fields.find(f=>f.req && !r[f.k]);
   if (miss){ toast(`${miss.l} is required`); const el=document.getElementById("f_"+miss.k); if (el) el.focus(); return; }
   if (drawer.coll==="aml"){ const k = riskOf(r); r.riskLevel = k.level; r.riskScore = k.score; if (!r.nextReview) r.nextReview = addMonths(r.date||TODAY(), k.months); }
+  if (drawer.coll==="proposals") {
+    if (!r.clientId && !String(r.party||"").trim()){ toast("Choose a client or enter the prospect's name"); return; }
+    const bad = (r.lines||[]).findIndex(l=>!String(l.s||"").trim());
+    if (bad>=0){ toast("Name the service in each row, or remove the empty row"); const el = document.querySelector(`[data-l="lines.${bad}.s"]`); if (el) el.focus(); return; }
+    if ((r.status==="Accepted"||r.status==="Declined") && !r.decidedOn) r.decidedOn = TODAY();
+  }
   if (drawer.coll==="requests") {
     const bad = (r.work||[]).findIndex(w=>!String(w.desc||"").trim());
     if (bad>=0){ toast("Describe the work in each row, or remove the empty row"); const el = document.querySelector(`[data-w="work.${bad}.desc"]`); if (el) el.focus(); return; }
@@ -2096,7 +2263,7 @@ document.addEventListener("submit", async e => {
   try { await save(coll, r); drawer=null; renderDrawer(); if (after) await after(r); render(); toast(isNew?`${S.one[0].toUpperCase()+S.one.slice(1)} added`:"Saved"); }
   catch(err){ toast(err && err.code==="invalid_argument" ? "You have view-only access, so changes can't be saved" : "Couldn't save: "+(err.code||err)); }
 });
-const VIEWS = ["overview","inbox","leads","clients","formations","contracts","aml","requests","documents","setup"];
+const VIEWS = ["overview","inbox","leads","clients","formations","proposals","contracts","aml","requests","documents","setup"];
 function route(){ const h = location.hash.slice(1); view = VIEWS.includes(h)?h:"overview"; filter.q=""; importPreview = view==="setup"?importPreview:null; render(); }
 window.addEventListener("hashchange", route);
 route(); boot();
