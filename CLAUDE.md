@@ -36,7 +36,10 @@ Read a thread's text only when the subject and snippet are not enough to decide.
 ### 3. Decide what each thread is
 
 **Request (client asks for something)** – the sender is a client, or the mail is clearly about a client:
-- sender matches a client's `email`, `noticeEmail` or `otherEmails`;
+- sender matches a client's `email`, `noticeEmail` or `otherEmails` – but some addresses are **shared by
+  two companies** (e.g. info@jug-ai-gradnje.com is JUG AI GRADNJE d.o.o. and SLOBELMAR;
+  vezjak.petra@siol.net is FASADE VEZJAK d.o.o. and VEZJAK d.o.o.): for those, decide by the company
+  named in the mail, and if it is not clear, list it as unsure;
 - many clients write from **personal addresses** (gmail.com etc.): match by the person's name
   (client `contact`, director), the company named in the subject, body or signature, or an earlier
   thread with the same address;
@@ -124,6 +127,9 @@ Save to `data/import-gmail-<from>-<to>.json` and send it to the user (SendUserFi
 - Write in the language of the mail (Slovenian, English or Bosnian/Croatian/Serbian).
 
 ### 6. Report back
+
+Client email lists (company → addresses) can be added in the app under *Firm & accounting → Client
+emails*, or as an import file `{"app":"practice-desk-crm","version":1,"clientEmails":[{"name":"…","emails":["…"]}]}`.
 
 Give the user a short table of what is in the file (requests per client, new leads, work rows with
 amounts), the unsure threads, and any client addresses worth adding to a client's *Other emails* so

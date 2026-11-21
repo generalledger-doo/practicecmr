@@ -180,6 +180,7 @@ tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-throug
 .agreed .sub{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 table.mini{min-width:0;background:transparent}table.mini td{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);font-size:13px}table.mini td.sec{color:var(--muted);font-size:12px}
 .printhost{position:fixed;left:-10000px;top:0}
+ul.plan{margin:10px 0 0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:6px}
 .printdoc{width:186mm;background:#fff;color:#1a1a1a;font-family:Calibri,Arial,sans-serif;font-size:10.5pt;line-height:1.35}
 .printdoc .ph{display:flex;justify-content:space-between;gap:16px;font-size:9pt;color:#444;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:14px}.printdoc .ph .r{text-align:right}
 .printdoc h1{font-size:16pt;margin:0 0 4px;font-family:Georgia,serif}.printdoc h2{font-size:11.5pt;margin:14px 0 4px;color:#1f3a5f;border-bottom:1px solid #1f3a5f;padding-bottom:2px}.printdoc .subt{font-size:12pt;color:#1f3a5f;margin:0 0 8px}.printdoc .pre{white-space:pre-wrap;margin:0 0 6px}.printdoc .meta{color:#444;margin:0 0 12px;font-size:9.5pt}
@@ -328,7 +329,7 @@ const REQ_TYPES = ["Quote request","Company formation","EU licence (GZS)","Work 
 const OFFICES = ["GZS","UE (upravna enota)","ZRSZ","FURS","AJPES","ZZZS","Court register","Notary","Bank","Other"];
 // every address a client writes from: main, notices, and the "other emails" list
 const clientEmails = c => [c.email, c.noticeEmail, ...String(c.otherEmails||"").split(/[,;\s]+/)].map(x=>emailOf(x)).filter(Boolean);
-const clientByEmail = em => { em = emailOf(em); return em ? state.clients.find(c=>clientEmails(c).includes(em)) : null; };
+const clientByEmail = em => { em = emailOf(em); if (!em) return null; const hits = state.clients.filter(c=>clientEmails(c).includes(em)); return hits.length===1 ? hits[0] : null; };
 const PROP_LANGS = [["sl","Slovenian"],["en","English"],["bs","Bosnian / Croatian / Serbian"]];
 // units for proposal lines: the quote units plus "per item" (own label) and "% of amount" (with a minimum)
 const PUNITS = [["month","per month","mesečno","mjesečno"],["once","one-off (fixed)","enkratno","jednokratno"],["item","per item","na kos","po komadu"],["hour","per hour","na uro","po satu"],["year","per year","letno","godišnje"],["employee","per employee / month","na zaposlenega mesečno","po zaposlenom mjesečno"],["pct","% of amount","% od zneska","% od iznosa"]];
@@ -908,8 +909,58 @@ function exportBackup(){
   data.settings = {firm: JSON.parse(JSON.stringify(firm))};
   return JSON.stringify({app:"practice-desk-crm", version:1, exportedAt:new Date().toISOString(), data}, null, 1);
 }
+// ---------- client email list (company -> email(s)), pasted or imported ----------
+function parseClientEmails(text){
+  return String(text||"").replace(/\r/g,"").split("\n").map(line=>{
+    const emails = (line.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g)||[]).map(e=>e.toLowerCase());
+    const name = line.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g,"").split(/\t|;|,|\s{2,}/)[0].trim();
+    return {name, emails:[...new Set(emails)]};
+  }).filter(x=>x.name && x.emails.length && !/^(podjetje|company|naziv|stranka)$/i.test(x.name));
+}
+function planClientEmails(list){
+  const plan = {update:[], add:[], same:[], unsure:[]};
+  for (const x of list){
+    const n = normName(x.name);
+    let hits = state.clients.filter(c=>normName(c.name)===n);
+    if (!hits.length && n.length>=4) hits = state.clients.filter(c=>{ const cn = normName(c.name); return cn.length>=4 && (cn.startsWith(n) || n.startsWith(cn)); });
+    if (hits.length>1) { plan.unsure.push({...x, why:`matches ${hits.map(c=>c.name).join(", ")}`}); continue; }
+    const c = hits[0];
+    if (!c) { plan.add.push(x); continue; }
+    const have = clientEmails(c), extra = x.emails.filter(e=>!have.includes(e));
+    if (extra.length) plan.update.push({c, x, extra}); else plan.same.push(x);
+  }
+  const all = list.flatMap(x=>x.emails), shared = [...new Set(all.filter((e,i)=>all.indexOf(e)!==i))];
+  return {...plan, shared};
+}
+async function applyClientEmails(plan){
+  for (const {c, extra} of plan.update){
+    const r = {...c}; const rest = [...extra];
+    if (!emailOf(r.email)) r.email = rest.shift();
+    if (rest.length) r.otherEmails = [...String(r.otherEmails||"").split(/[,;\s]+/).filter(Boolean), ...rest].join(", ");
+    await save("clients", r);
+  }
+  for (const x of plan.add){
+    const entity = /\bd\.?\s?o\.?\s?o\.?/i.test(x.name) ? "d.o.o." : /\bs\.?\s?p\.?\b/i.test(x.name) ? "s.p." : "";
+    await save("clients", newRecord("clients", {name:x.name, entity, email:x.emails[0], otherEmails:x.emails.slice(1).join(", "), status:"Active", country:"Slovenija", source:"Email list"}));
+  }
+}
+function clientEmailsSummary(plan){
+  const lines = [];
+  if (plan.update.length) lines.push(`Add emails to ${plan.update.length} existing client${plan.update.length>1?"s":""}: ${plan.update.map(u=>u.c.name).join(", ")}`);
+  if (plan.add.length) lines.push(`Create ${plan.add.length} new client${plan.add.length>1?"s":""}: ${plan.add.map(x=>x.name).join(", ")}`);
+  if (plan.same.length) lines.push(`Already up to date: ${plan.same.length}`);
+  if (plan.unsure.length) lines.push(`Skipped (name matches more than one client): ${plan.unsure.map(x=>`${x.name} – ${x.why}`).join("; ")}`);
+  if (plan.shared.length) lines.push(`Shared by more than one company (emails from these are matched by company name, not address): ${plan.shared.join(", ")}`);
+  return lines;
+}
+let emailPlan = null;
+
 async function importBackup(text, name){
   let j; try { j = JSON.parse(text); } catch(e){ toast("That file isn't a Practice Desk backup"); return; }
+  if (j && Array.isArray(j.clientEmails)) { const plan = planClientEmails(j.clientEmails.map(x=>({name:x.name, emails:[].concat(x.emails||x.email||[]).map(e=>emailOf(e)).filter(Boolean)})));
+    if (!plan.update.length && !plan.add.length) { toast("All client emails are already up to date"); return; }
+    if (!confirm(clientEmailsSummary(plan).join("\n\n") + "\n\nNothing else is changed. Continue?")) return;
+    try { await applyClientEmails(plan); toast(`Updated ${plan.update.length}, added ${plan.add.length} clients`); } catch(e){ toast("Import failed: " + (e.message||e.code||e)); } return; }
   const d = j && j.data; if (!d || typeof d!=="object") { toast("That file isn't a Practice Desk backup"); return; }
   const n = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
   if (j.mergeOnly || j.addOnly) {
@@ -1471,6 +1522,12 @@ function vSetup(){
     </div>
     ${imp?`<div class="banner" data-tone="info" style="margin-top:12px">Found ${imp.rows.length} partners in ${esc(imp.file)}: ${imp.newRows.length} new, ${imp.upd.length} matching existing clients by tax number or name. Columns recognised: ${esc(Object.keys(imp.map).join(", ")||"none")}.
       <button class="btn small primary" data-act="imp-apply" ${imp.rows.length?"":"disabled"}>Import ${imp.newRows.length} new and update ${imp.upd.length}</button><button class="btn small" data-act="imp-cancel">Cancel</button></div>`:""}
+  </section>
+  <section class="panel" style="margin-top:20px"><h2>Client emails</h2>
+    <p class="sub" style="margin:0 0 12px">Paste a list of companies and their email addresses (one company per line; several addresses separated by ; or ,), e.g. copied from Excel. Existing clients are matched by name and get the new addresses; missing ones are added as clients. Emails from these addresses are then recognised as coming from that client.</p>
+    <textarea id="cemails" rows="6" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:var(--r);padding:8px;font-family:var(--font-data);font-size:12.5px" placeholder="ALBORO d.o.o.&#9;office@alboro.eu&#10;GL TRANS d.o.o.&#9;ishant@gltransports.com; murati@gltransports.com">${esc((emailPlan&&emailPlan.text)||"")}</textarea>
+    <div class="tools" style="margin-top:8px"><button class="btn" data-act="cemails-check">Check list</button>${emailPlan&&(emailPlan.update.length||emailPlan.add.length)?`<button class="btn primary" data-act="cemails-apply">Apply</button>`:""}${emailPlan?`<button class="btn" data-act="cemails-clear">Clear</button>`:""}</div>
+    ${emailPlan?`<ul class="plan">${clientEmailsSummary(emailPlan).map(l=>`<li>${esc(l)}</li>`).join("")||"<li>Nothing to change.</li>"}</ul>`:""}
   </section>
   <section class="panel" style="margin-top:20px"><h2>Backup</h2>
     <p class="sub" style="margin:0 0 12px">${mode==="browser"?"Your records live in this browser only. Clearing browser data deletes them, and other computers don't see them. ":mode==="online"?"Your records are stored online and backed up by the database host. Keep a monthly backup file offline as well. ":""}A backup is one JSON file with every lead, client, formation, AML check, request, document, template and your firm settings. Restore it here on any computer or browser to move or recover your records.</p>
@@ -2193,6 +2250,9 @@ async function act(el){
   else if (a==="delete-yes"){ const {coll:c,rec} = drawer; drawer=null; renderDrawer(); try { await remove(c, rec.id); toast("Deleted"); } catch(e){ toast("Couldn't delete: "+(e.code||e)); } }
   else if (a==="clear-examples"){ for (const c of COLLS) for (const r of state[c].filter(x=>x.example)) await remove(c, r.id).catch(()=>{}); toast("Examples removed"); }
   else if (a==="export"){ offer(`${coll}-${TODAY()}.csv`, toCsv(coll)); }
+  else if (a==="cemails-check"){ const text = (document.getElementById("cemails")||{}).value||""; const list = parseClientEmails(text); if (!list.length){ toast("No company + email lines found"); return; } emailPlan = {...planClientEmails(list), text}; render(); }
+  else if (a==="cemails-apply"){ if (!emailPlan) return; try { await applyClientEmails(emailPlan); toast(`Updated ${emailPlan.update.length}, added ${emailPlan.add.length} clients`); emailPlan = null; render(); } catch(e){ toast("Couldn't save: " + (e.code||e.message||e)); } }
+  else if (a==="cemails-clear"){ emailPlan = null; render(); }
   else if (a==="backup"){ offer(`practice-desk-backup-${TODAY()}.json`, new Blob([exportBackup()], {type:"application/json"})); }
   else if (a==="load-templates"){ try { const d = JSON.parse(document.getElementById("default-templates").textContent); for (const [tid, t] of Object.entries(d)) await save("templates", {...t, id:tid}); toast("Default templates loaded"); } catch(e){ toast("Couldn't load templates"); } }
   else if (a==="acc-partners"){ offer(`partnerji-${TODAY()}.csv`, partnersCsv()); }
