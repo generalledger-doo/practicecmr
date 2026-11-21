@@ -78,7 +78,14 @@ address without the booking heading and form fields are sorted by the normal rul
 **Ignore** – newsletters, supplier invoices, bank and system notifications, automatic replies,
 internal mail, anything not about a client or prospect.
 
-**Unsure** – do not guess. List these for the user (date, sender, subject, why) and leave them out.
+**Unsure** – do not guess and do not leave it out: add it with a `review` text saying what to check
+(e.g. "Not sure which company this is for – shared address"). The app shows it in purple with a
+*Check* label until the user clicks *Verified*. Only clearly irrelevant mail is left out.
+
+**Already written** – the user also writes requests by hand. The app skips an imported request that
+matches an existing one (same client, similar subject, within 3 weeks, or the same case number) and
+marks near-matches purple. Still avoid obvious duplicates within one file (one request per matter,
+even if it spans several threads).
 
 ### 4. Billable work
 
