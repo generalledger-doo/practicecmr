@@ -165,12 +165,14 @@ tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-throug
 .yearpanel{margin-top:16px}.ytable{min-width:640px}.ytable th.bar,.ytable td.bar{width:22%}
 .ytable tr[data-month]{cursor:pointer}.ytable tr[data-month]:hover td{background:var(--sunken)}.ytable tr.empty td{color:var(--muted)}.ytable tr.cur td:first-child{font-weight:600}
 .ytable tfoot th{border-top:2px solid var(--line);font-weight:600;text-align:left;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg);background:var(--surface);padding:10px 14px}.ytable tfoot th.num{font-family:var(--font-data);font-size:13px}
-.wrow.lrow{grid-template-columns:72px 160px 104px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc del" "incl incl incl incl incl" "qty unit price amt amt" "xtra xtra xtra xtra xtra"}
-.wrow.lrow .xtra{max-width:340px}
+.wrow.lrow{grid-template-columns:72px 160px 104px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc del" "incl incl incl incl incl" "qty unit price amt amt" "meta meta meta meta meta"}
+.wrow.lrow .meta{grid-area:meta;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.wrow.lrow .meta input{width:auto;flex:1 1 120px}.wrow.lrow .meta .grp{flex:2 1 200px}
+.wrow.lrow .meta label.chk{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);white-space:nowrap}.wrow.lrow .meta label.chk input{flex:none;width:16px;height:16px}
+#proptotal .gt{display:block;text-align:right}
 .wrow.lrow .incl{grid-area:incl;font-size:12.5px}.wrow.lrow .xtra{grid-area:xtra}.wrow.lrow .amt{grid-area:amt}
 .wrow.lrow input:disabled{opacity:.45}
 .wrow.lrow.whead{grid-template-areas:"qty unit price amt amt"}
-@media (max-width:760px){.wrow.lrow{grid-template-columns:1fr 1fr 1fr 36px;grid-template-areas:"desc desc desc del" "incl incl incl incl" "qty unit unit unit" "price price amt amt" "xtra xtra xtra xtra"}}
+@media (max-width:760px){.wrow.lrow{grid-template-columns:1fr 1fr 1fr 36px;grid-template-areas:"desc desc desc del" "incl incl incl incl" "qty unit unit unit" "price price amt amt" "meta meta meta meta"}}
 .lrow [data-l$=".s"]{grid-area:desc}.lrow [data-l$=".q"]{grid-area:qty}.lrow [data-l$=".u"]{grid-area:unit}.lrow [data-l$=".p"]{grid-area:price}
 .wrow.lrow.whead span:nth-child(1){grid-area:qty}.wrow.lrow.whead span:nth-child(2){grid-area:unit}.wrow.lrow.whead span:nth-child(3){grid-area:price}.wrow.lrow.whead span:nth-child(4){grid-area:amt;text-align:right}
 .agreedchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
@@ -184,7 +186,7 @@ table.mini{min-width:0;background:transparent}table.mini td{padding:4px 8px 4px 
 .printdoc table{width:100%;min-width:0;border-collapse:collapse;background:#fff}.printdoc th{background:#eee;color:#333;font-size:8.5pt;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:5px 6px;border-bottom:1px solid #999}
 .printdoc td{padding:5px 6px;border-bottom:1px solid #ddd;vertical-align:top;font-size:10pt;color:#1a1a1a}.printdoc td .s{color:#666;font-size:9pt}.printdoc .n{text-align:right;white-space:nowrap}
 .printdoc tr.w td{color:#555;font-size:9pt;border-bottom:1px dotted #ddd;padding-top:2px;padding-bottom:2px}.printdoc tr.w td:first-child{padding-left:14px}
-.printdoc tfoot td{font-weight:bold;border-top:2px solid #999;border-bottom:0}
+.printdoc tfoot td,.printdoc tr.tot td{font-weight:bold;border-top:2px solid #999;border-bottom:0}.printdoc tr.grp td{background:#1f3a5f;color:#fff;font-weight:bold;font-size:10pt;padding-top:6px}
 .work{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
 .wrow{display:grid;grid-template-columns:132px 64px 96px 88px minmax(0,1fr) 32px;grid-template-areas:"desc desc desc desc desc del" "date qty unit price amt amt";gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .wrow.whead{grid-template-areas:"date qty unit price amt amt";padding:0;border:0;font-size:11.5px;color:var(--muted);font-weight:600}
@@ -404,6 +406,7 @@ const SCHEMA = {
     {k:"email",l:"Sent to (email)",t:"email"},{k:"lang",l:"Language",t:"select",o:PROP_LANGS,d:"sl"},
     {k:"date",l:"Date sent",t:"date",d:TODAY},{k:"validUntil",l:"Valid until",t:"date",d:()=>addDays(TODAY(), +firm.validDays||30)},
     {k:"decidedOn",l:"Accepted / declined on",t:"date",show:r=>r.status==="Accepted"||r.status==="Declined"},
+    {k:"accepted",l:"Options / sections the client accepted",t:"checks",o:r=>propGroups(r),wide:1,show:r=>r.status==="Accepted" && propGroups(r).length>1},
     {k:"lines",l:"Prices offered (excl. VAT)",t:"lines",wide:1},
     {k:"payment",l:"Payment terms",t:"textarea",wide:1,d:()=>lastPropValue("payment")},
     {k:"notes",l:"Conditions / notes",t:"textarea",wide:1}]},
@@ -460,9 +463,9 @@ function workEditor(r){
       <input type="number" min="0" step="0.01" data-w="work.${i}.p" data-num="1" value="${esc(w.p??"")}" aria-label="Price per unit (€)">
       <span class="mono amt" data-amt="${i}">${eur2(rowAmt(w))}</span>
       <button type="button" class="btn small" data-act="work-del" data-i="${i}" aria-label="Remove row">✕</button></div>`).join("")}
-    <datalist id="agreed-list">${ap.map(a=>`<option value="${esc(a.s)}">${esc(priceText(a))}</option>`).join("")}</datalist>
+    <datalist id="agreed-list">${ap.map(a=>`<option value="${esc(a.s)}">${esc(priceText({...a, from:a.fromPrice}))}</option>`).join("")}</datalist>
     <div class="wfoot"><button type="button" class="btn small" data-act="work-add">+ Add row</button><span>Total <b class="mono" id="worktotal">${eur2(workTotal(r))}</b></span></div>
-    ${ap.length?`<div class="agreedchips"><span class="sub">Agreed prices:</span>${ap.map((a,i)=>`<button type="button" class="btn small" data-act="work-add-agreed" data-i="${i}">+ ${esc(a.s)} · ${esc(a.u==="pct"?pctText(a):eur2(a.p)+"/"+(a.u==="hour"?"h":punit(a,"en")))}</button>`).join("")}</div>`:""}
+    ${ap.length?`<div class="agreedchips"><span class="sub">Agreed prices:</span>${ap.map((a,i)=>`<button type="button" class="btn small" data-act="work-add-agreed" data-i="${i}">+ ${esc(a.s)} · ${esc(a.u==="pct"?pctText(a):(a.fromPrice?"from ":"")+eur2(a.p)+"/"+(a.u==="hour"?"h":punit(a,"en")))}</button>`).join("")}</div>`:""}
   </fieldset>`;
 }
 function workRows(period){
@@ -483,12 +486,19 @@ function workCsv(month){
 // ---------- proposals and agreed client prices ----------
 const lineAmt = l => l.u==="pct" ? 0 : Math.round((+l.q||0) * (+l.p||0) * 100) / 100;
 const pctText = l => `${String(+l.p||0).replace(".",",")} %${+l.min?` (min ${eur2(l.min)})`:""}`;
-const priceText = (l, lang="en") => l.u==="pct" ? pctText(l) : `${eur2(l.p)} ${l.u==="once"?"":"/ "+punit(l, lang)}`.trim();
+const FROM = {en:"from", sl:"od", bs:"od"};
+const priceText = (l, lang="en") => l.u==="pct" ? pctText(l) : `${l.from?FROM[lang]+" ":""}${eur2(l.p)}${+l.max>+l.p?"–"+eur2(l.max):""} ${l.u==="once"?"":"/ "+punit(l, lang)}`.trim();
+const propGroups = r => [...new Set((r.lines||[]).map(l=>String(l.group||"").trim()).filter(Boolean))];
+// totals per option / section, so alternative options are never added together
+function groupTotals(r){
+  const gs = {}; (r.lines||[]).forEach(l=>{ const g = String(l.group||"").trim(); (gs[g] ||= {lines:[]}).lines.push(l); });
+  return Object.entries(gs).map(([g,v])=>({group:g, ...propTotals({lines:v.lines}), approx:v.lines.some(l=>l.from || +l.max>+l.p)}));
+}
 const propTotals = r => { const t = {monthly:0, once:0, year:0, hour:[], other:[]}; (r.lines||[]).forEach(l=>{ const a = lineAmt(l); if (l.u==="month"||l.u==="employee") t.monthly += a; else if (l.u==="year") t.year += a; else if (l.u==="hour") t.hour.push(l); else if (l.u==="pct" || l.u==="item") t.other.push(l); else t.once += a; }); return t; };
 // the latest price, unit and description used for each service in any proposal (newest first)
 function pastServices(){
   const out = {};
-  [...state.proposals].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))).forEach(r=>(r.lines||[]).forEach(l=>{ if (l.s && String(l.s).trim()) out[l.s.trim().toLowerCase()] = {...l, from:r.number, date:r.date}; }));
+  [...state.proposals].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))).forEach(r=>(r.lines||[]).forEach(l=>{ if (l.s && String(l.s).trim()) out[l.s.trim().toLowerCase()] = {...l, number:r.number, date:r.date}; }));
   return out;
 }
 const propClientId = r => r.clientId || ((byId("leads", r.leadId)||{}).clientId) || "";
@@ -497,7 +507,7 @@ function agreedPrices(clientId){
   if (!clientId) return [];
   const out = {};
   state.proposals.filter(r=>r.status==="Accepted" && propClientId(r)===clientId).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
-    .forEach(r=>(r.lines||[]).forEach(l=>{ if (l.s) out[l.s.trim().toLowerCase()] = {...l, from:r.number, date:r.date, propId:r.id}; }));
+    .forEach(r=>(r.lines||[]).filter(l=>!(r.accepted||[]).length || !l.group || r.accepted.includes(String(l.group).trim())).forEach(l=>{ if (l.s) out[l.s.trim().toLowerCase()] = {...l, fromPrice:l.from, from:r.number, date:r.date, propId:r.id}; }));
   return Object.values(out).sort((a,b)=>a.s.localeCompare(b.s));
 }
 const unitToWork = u => u==="hour" ? "h" : (u==="once" || u==="pct") ? "once" : "kos";
@@ -505,7 +515,7 @@ function linesEditor(r){
   const rows = r.lines || [], t = propTotals(r), past = pastServices();
   const svc = [...new Set([...Object.values(past).map(x=>x.s), ...pkgs().map(p=>p.name), ...SERVICES])];
   return `<fieldset class="f wide work"><legend>Prices offered (excl. VAT)</legend>
-    <datalist id="svc-list">${svc.map(x=>{ const pv = past[x.trim().toLowerCase()]; return `<option value="${esc(x)}">${pv?esc(priceText(pv)+" · "+(pv.from||"")):""}</option>`; }).join("")}</datalist>
+    <datalist id="svc-list">${svc.map(x=>{ const pv = past[x.trim().toLowerCase()]; return `<option value="${esc(x)}">${pv?esc(priceText(pv)+(pv.number?" · "+pv.number:"")):""}</option>`; }).join("")}</datalist>
     ${rows.length?`<div class="wrow lrow whead" aria-hidden="true"><span>Qty</span><span>Unit</span><span>Price</span><span>Amount</span></div>`:""}
     ${rows.map((l,i)=>`<div class="wrow lrow">
       <input data-l="lines.${i}.s" list="svc-list" value="${esc(l.s||"")}" placeholder="Service (start typing: earlier services fill in their last price)" aria-label="Service">
@@ -513,19 +523,25 @@ function linesEditor(r){
       <input type="number" min="0" step="0.25" data-l="lines.${i}.q" data-num="1" value="${esc(l.q??"")}" aria-label="Quantity" ${l.u==="pct"?"disabled":""}>
       <select data-l="lines.${i}.u" aria-label="Unit">${PUNITS.map(([v,en])=>`<option value="${v}" ${l.u===v?"selected":""}>${en}</option>`).join("")}</select>
       <input type="number" min="0" step="0.01" data-l="lines.${i}.p" data-num="1" value="${esc(l.p??"")}" aria-label="${l.u==="pct"?"Percent":"Price (€)"}" placeholder="${l.u==="pct"?"%":"€"}">
-      ${l.u==="item"?`<input class="xtra" data-l="lines.${i}.unitLabel" value="${esc(l.unitLabel||"")}" placeholder="per what? e.g. per truck, per driver" aria-label="Unit label">`:""}
-      ${l.u==="pct"?`<input class="xtra" type="number" min="0" step="0.01" data-l="lines.${i}.min" data-num="1" value="${esc(l.min??"")}" placeholder="minimum €" aria-label="Minimum (€)">`:""}
-      <span class="mono amt" data-lamt="${i}">${l.u==="pct"?esc(pctText(l)):eur2(lineAmt(l))}</span>
+      <div class="meta">
+        <input class="grp" data-l="lines.${i}.group" list="grp-list" value="${esc(l.group||"")}" placeholder="Option / section (e.g. Option A)" aria-label="Option or section">
+        ${l.u==="item"?`<input data-l="lines.${i}.unitLabel" value="${esc(l.unitLabel||"")}" placeholder="per what? e.g. per truck" aria-label="Unit label">`:""}
+        ${l.u==="pct"?`<input type="number" min="0" step="0.01" data-l="lines.${i}.min" data-num="1" value="${esc(l.min??"")}" placeholder="minimum €" aria-label="Minimum (€)">`:`<label class="chk"><input type="checkbox" data-l="lines.${i}.from" data-bool="1" ${l.from?"checked":""}> from</label>
+        <input type="number" min="0" step="0.01" data-l="lines.${i}.max" data-num="1" value="${esc(l.max??"")}" placeholder="up to €" aria-label="Up to (€), for a price range">`}
+      </div>
+      <span class="mono amt" data-lamt="${i}">${l.u==="pct"?esc(pctText(l)):(l.from?"from ":"")+eur2(lineAmt(l))+(+l.max>+l.p?"–"+eur2(Math.round((+l.q||0)*(+l.max)*100)/100):"")}</span>
       <button type="button" class="btn small" data-act="line-del" data-i="${i}" aria-label="Remove row">✕</button></div>`).join("")}
-    <div class="wfoot"><button type="button" class="btn small" data-act="line-add">+ Add service</button><span id="proptotal">${propTotalText(t)}</span></div>
+    <datalist id="grp-list">${propGroups(r).map(g=>`<option value="${esc(g)}">`).join("")}</datalist>
+    <div class="wfoot"><button type="button" class="btn small" data-act="line-add">+ Add service</button><span id="proptotal">${groupTotalText(r)}</span></div>
   </fieldset>`;
 }
+const groupTotalText = r => { const gt = groupTotals(r); if (gt.length<2) return propTotalText(gt[0] || propTotals(r)); return gt.map(g=>`<span class="gt">${esc(g.group||"Other")}: ${propTotalText(g)}${g.approx?" (from)":""}</span>`).join(""); };
 const propTotalText = t => [t.monthly?`Monthly <b class="mono">${eur2(t.monthly)}</b>`:"", t.year?`Yearly <b class="mono">${eur2(t.year)}</b>`:"", t.once?`One-off <b class="mono">${eur2(t.once)}</b>`:"", t.hour.length?`${t.hour.length} hourly rate${t.hour.length>1?"s":""}`:"", t.other.length?`${t.other.length} per-item / % price${t.other.length>1?"s":""}`:""].filter(Boolean).join(" · ") || "No prices yet";
 function agreedHtml(clientId){
   const ap = agreedPrices(clientId), props = state.proposals.filter(r=>propClientId(r)===clientId).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   if (!props.length) return `<div class="f wide agreed"><span class="lbl">Agreed prices</span><span class="sub">No proposals yet. <button type="button" class="btn small" data-act="prop-new" data-client="${clientId}">New proposal</button></span></div>`;
   return `<div class="f wide agreed"><span class="lbl">Agreed prices (from accepted proposals)</span>
-    ${ap.length?`<table class="mini"><tbody>${ap.map(a=>`<tr><td>${esc(a.s)}</td><td class="num">${a.u==="pct"?esc(pctText(a)):eur2(a.p)}</td><td>${a.u==="pct"?"":esc(punit(a,"en"))}${+a.q!==1&&a.u!=="pct"?` × ${a.q}`:""}</td><td class="sec">${esc(a.from||"")}</td></tr>`).join("")}</tbody></table>`:`<span class="sub">No accepted proposal yet.</span>`}
+    ${ap.length?`<table class="mini"><tbody>${ap.map(a=>`<tr><td>${esc(a.s)}</td><td class="num">${esc(priceText({...a, from:a.fromPrice}).replace(/ \/ .*$/,""))}</td><td>${a.u==="pct"?"":esc(punit(a,"en"))}${+a.q!==1&&a.u!=="pct"?` × ${a.q}`:""}</td><td class="sec">${esc(a.from||"")}${a.group?" · "+esc(a.group):""}</td></tr>`).join("")}</tbody></table>`:`<span class="sub">No accepted proposal yet.</span>`}
     <span class="sub">Proposals: ${props.map(r=>`<a href="#" data-act="open" data-coll="proposals" data-id="${r.id}">${esc(r.number||"—")}</a> <span class="pill ${propTone(r)}">${esc(propExpired(r)?"Expired":r.status)}</span>`).join(" · ")} <button type="button" class="btn small" data-act="prop-new" data-client="${clientId}">New proposal</button></span></div>`;
 }
 const propTone = r => propExpired(r) ? "warn" : ({Draft:"", Sent:"acc", Accepted:"ok", Declined:"bad"})[r.status] || "";
@@ -573,12 +589,15 @@ function proposalPdfHtml(r){
              en:{t:"Proposal", dt:"Date", vu:"Valid until", to:"To", s:"Service", q:"Qty", p:"Price (EUR, excl. VAT)", a:"Amount", m:"Monthly total", y:"Yearly total", o:"One-off total", vat:"All prices are in EUR and exclude VAT.", pay:"Payment terms", n:"Conditions"},
              bs:{t:"Ponuda", dt:"Datum", vu:"Ponuda važi do", to:"Za", s:"Usluga", q:"Količina", p:"Cijena (EUR, bez PDV-a)", a:"Iznos", m:"Mjesečno ukupno", y:"Godišnje ukupno", o:"Jednokratno ukupno", vat:"Sve cijene su u EUR i ne uključuju PDV.", pay:"Način plaćanja", n:"Uslovi"}}[lang];
   const name = l => lang==="sl" ? (SERVICES_SL[l.s]||l.s) : l.s;
-  const price = l => l.u==="pct" ? esc(pctText(l)) : `${eur2(l.p)}${l.u==="once"?"":" / "+esc(punit(l, lang))}`;
+  const price = l => esc(priceText(l, lang));
+  const row = l => `<tr class="keep"><td><b>${esc(name(l))}</b>${+l.q&&+l.q!==1&&l.u!=="pct"?` × ${String(+l.q).replace(".",",")}`:""}${l.desc?`<br><span class="s">${esc(l.desc)}</span>`:""}</td><td class="n">${price(l)}</td><td class="n">${l.u==="pct"?"":(l.from?FROM[lang]+" ":"")+eur2(lineAmt(l))}</td></tr>`;
+  const tots = (g, label) => `${g.monthly?`<tr class="tot"><td colspan="2">${label?esc(label)+" – ":""}${T.m}</td><td class="n">${g.approx?FROM[lang]+" ":""}${eur2(g.monthly)}</td></tr>`:""}${g.year?`<tr class="tot"><td colspan="2">${label?esc(label)+" – ":""}${T.y}</td><td class="n">${eur2(g.year)}</td></tr>`:""}${g.once?`<tr class="tot"><td colspan="2">${label?esc(label)+" – ":""}${T.o}</td><td class="n">${g.approx?FROM[lang]+" ":""}${eur2(g.once)}</td></tr>`:""}`;
+  const gt = groupTotals(r), many = gt.length>1;
   return `${firmHead()}<h1>${T.t}${r.number?" "+esc(r.number):""}</h1>${r.title?`<p class="subt">${esc(r.title)}</p>`:""}
     <p class="meta">${T.to}: <b>${esc(c.name||r.party||"")}</b>${r.email?` (${esc(r.email)})`:""}${c.address?`, ${esc(c.address)}, ${esc([c.postcode,c.city].filter(Boolean).join(" "))}`:""} · ${T.dt}: ${F(r.date)}${r.validUntil?` · ${T.vu}: ${F(r.validUntil)}`:""}</p>
     <table><thead><tr><th>${T.s}</th><th class="n">${T.p}</th><th class="n">${T.a}</th></tr></thead><tbody>
-    ${(r.lines||[]).map(l=>`<tr class="keep"><td><b>${esc(name(l))}</b>${+l.q&&+l.q!==1&&l.u!=="pct"?` × ${String(+l.q).replace(".",",")}`:""}${l.desc?`<br><span class="s">${esc(l.desc)}</span>`:""}</td><td class="n">${price(l)}</td><td class="n">${l.u==="pct"?"":eur2(lineAmt(l))}</td></tr>`).join("")}</tbody>
-    <tfoot>${t.monthly?`<tr><td colspan="2">${T.m}</td><td class="n">${eur2(t.monthly)}</td></tr>`:""}${t.year?`<tr><td colspan="2">${T.y}</td><td class="n">${eur2(t.year)}</td></tr>`:""}${t.once?`<tr><td colspan="2">${T.o}</td><td class="n">${eur2(t.once)}</td></tr>`:""}</tfoot></table>
+    ${many ? gt.map(g=>`<tr class="grp"><td colspan="3">${esc(g.group||"")}</td></tr>${(r.lines||[]).filter(l=>String(l.group||"").trim()===g.group).map(row).join("")}${tots(g, "")}`).join("") : (r.lines||[]).map(row).join("")}</tbody>
+    ${many ? "" : `<tfoot>${tots({...t, approx:gt[0]&&gt[0].approx}, "")}</tfoot>`}</table>
     <p class="meta">${T.vat}</p>
     ${r.payment?`<h2>${T.pay}</h2><p class="pre">${esc(r.payment)}</p>`:""}${r.notes?`<h2>${T.n}</h2><p class="pre">${esc(r.notes)}</p>`:""}`;
 }
@@ -589,7 +608,9 @@ function vProposals(){
   const sel = `<select id="pstatus" aria-label="Status filter"><option value="">All statuses</option>${[...PROP_STATUS,"Expired"].map(s=>`<option ${st===s?"selected":""}>${s}</option>`).join("")}</select>`;
   return header("Proposals", "Offers sent to clients and prospects, with the prices you quoted. Mark one Accepted and its prices become the client's agreed prices, offered when you log extra work.", "proposals", search("Search proposals")+sel+exportBtn("proposals")) +
   (ps.length?`<div class="tablewrap"><table><thead><tr><th>Number</th><th>Client / prospect</th><th>Date</th><th>Valid until</th><th>Status</th><th class="num">Monthly</th><th class="num">One-off / yearly</th><th class="num">Services</th></tr></thead><tbody>
-  ${ps.map(r=>{ const t = propTotals(r); return `<tr data-act="open" data-coll="proposals" data-id="${r.id}" tabindex="0"><td class="num"><b>${esc(r.number||"—")}</b></td><td>${esc(clientName(propClientId(r))||r.party||"—")}${!propClientId(r)&&r.leadId?' <span class="pill">Lead</span>':""}${r.title?`<span class="sec">${esc(r.title)}</span>`:""}</td><td class="num">${fmtDate(r.date)}</td><td class="num">${fmtDate(r.validUntil)}</td><td><span class="pill ${propTone(r)}">${esc(propExpired(r)?"Expired":r.status||"")}</span></td><td class="num">${t.monthly?eur2(t.monthly):"—"}</td><td class="num">${t.once||t.year?eur2(t.once+t.year):"—"}</td><td class="num">${(r.lines||[]).length}</td></tr>`; }).join("")}
+  ${ps.map(r=>{ const gt = groupTotals(r), t = propTotals(r), many = gt.length>1;
+    const col = k => many ? gt.filter(g=>g[k] || (k==="once" && g.year)).map(g=>eur2(k==="once"?g.once+g.year:g[k])+(g.approx?"+":"")).join(" / ") || "—" : (k==="once" ? (t.once||t.year?eur2(t.once+t.year):"—") : (t.monthly?eur2(t.monthly):"—"));
+    return `<tr data-act="open" data-coll="proposals" data-id="${r.id}" tabindex="0"><td class="num"><b>${esc(r.number||"—")}</b></td><td>${esc(clientName(propClientId(r))||r.party||"—")}${!propClientId(r)&&r.leadId?' <span class="pill">Lead</span>':""}${r.title?`<span class="sec">${esc(r.title)}</span>`:""}</td><td class="num">${fmtDate(r.date)}</td><td class="num">${fmtDate(r.validUntil)}</td><td><span class="pill ${propTone(r)}">${esc(propExpired(r)?"Expired":r.status||"")}</span></td><td class="num">${col("monthly")}</td><td class="num">${col("once")}${many?`<span class="sec">${gt.length} options / sections</span>`:""}</td><td class="num">${(r.lines||[]).length}</td></tr>`; }).join("")}
   </tbody></table></div>`:`<div class="empty"><b>${state.proposals.length?"No proposals match":"No proposals yet"}</b>${state.proposals.length?"Change the search or status filter.":"Add one with “New proposal”, or send a quote from a lead or client: quotes sent from Practice Desk are saved here automatically."}</div>`);
 }
 
@@ -876,7 +897,10 @@ async function importBackup(text, name){
   const d = j && j.data; if (!d || typeof d!=="object") { toast("That file isn't a Practice Desk backup"); return; }
   const n = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
   if (j.mergeOnly) {
-    if (!confirm(`Add ${n} record${n===1?"":"s"} from ${name}? Nothing else is changed.`)) return;
+    // link imported proposals to an existing client with a matching name
+    const linked = [];
+    for (const pr of Object.values(d.proposals||{})) if (pr.matchClient && !pr.clientId) { const c = state.clients.find(c=>String(c.name||"").toLowerCase().includes(String(pr.matchClient).toLowerCase())); if (c) { pr.clientId = c.id; linked.push(c.name); } delete pr.matchClient; }
+    if (!confirm(`Add ${n} record${n===1?"":"s"} from ${name}?${linked.length?`\n\nLinked to your existing client: ${linked.join(", ")}.`:""} Nothing else is changed.`)) return;
     try { if (db && db.load) await db.load(d, true); toast(`Added ${n} record${n===1?"":"s"}`); } catch(e){ toast("Import failed: " + (e.message||e.code||e)); }
     return;
   }
@@ -1493,7 +1517,7 @@ function fieldHtml(f, r){
   if (f.t==="risk"){ const k = riskOf(r); return `<div class="riskbox" id="riskbox"><span>Risk score <b class="mono">${k.score}</b> · <span class="pill ${riskTone(k.level)}">${k.level} risk</span></span><span style="font-size:12px;color:var(--muted)">Suggested: ${k.cdd} CDD, review in ${k.months} months <button type="button" class="btn small" data-act="apply-risk">Apply</button></span></div>`; }
   if (f.t==="work") return workEditor(r);
   if (f.t==="lines") return linesEditor(r);
-  if (f.t==="checks") { const sel = r[f.k]||[]; return `<fieldset class="${cls}"><legend>${f.l}</legend><div class="checks">${f.o.map((o,i)=>`<label><input type="checkbox" name="${f.k}" value="${esc(o)}" id="${id}_${i}" ${sel.includes(o)?"checked":""}> ${esc(o)}</label>`).join("")}</div></fieldset>`; }
+  if (f.t==="checks") { const sel = r[f.k]||[], opts = typeof f.o==="function" ? f.o(r) : f.o; return `<fieldset class="${cls}"><legend>${f.l}</legend><div class="checks">${opts.map((o,i)=>`<label><input type="checkbox" name="${f.k}" value="${esc(o)}" id="${id}_${i}" ${sel.includes(o)?"checked":""}> ${esc(o)}</label>`).join("")}</div></fieldset>`; }
   let input;
   if (f.t==="select") input = `<select id="${id}" name="${f.k}">${f.d!==undefined?"":`<option value=""></option>`}${f.o.map(o=>{const [val,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${v===val?"selected":""}>${esc(l)}</option>`;}).join("")}</select>`;
   else if (f.t==="client") input = `<select id="${id}" name="${f.k}" ${f.req?"required":""}><option value="">${f.req?"Choose a client":"—"}</option>${[...state.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}" ${v===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`;
@@ -2058,7 +2082,7 @@ async function compPdf(){
 function toCsv(coll){
   const fields = SCHEMA[coll].fields.filter(f=>f.t!=="risk");
   const head = fields.map(f=>f.l); if (coll==="aml") head.push("Risk level","Risk score");
-  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):f.t==="work"?String(workTotal(r)).replace(".",","):f.t==="lines"?(r.lines||[]).map(l=>`${l.s}: ${priceText(l,"sl")}${+l.q&&+l.q!==1&&l.u!=="pct"?` × ${String(+l.q).replace(".",",")}`:""}`).join(" | "):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
+  const rows = state[coll].map(r=>{ const out = fields.map(f=>f.k==="clientId"?clientName(r[f.k]):f.t==="work"?String(workTotal(r)).replace(".",","):f.t==="lines"?(r.lines||[]).map(l=>`${l.group?"["+l.group+"] ":""}${l.s}: ${priceText(l,"sl")}${+l.q&&+l.q!==1&&l.u!=="pct"?` × ${String(+l.q).replace(".",",")}`:""}`).join(" | "):r[f.k]); if (coll==="aml"){const k=riskOf(r); out.push(k.level,k.score);} return out; });
   return toCsvRows([head,...rows]);
 }
 async function offer(filename, data){
@@ -2135,7 +2159,7 @@ async function act(el){
     const done = r.status!=="Done";
     try { await save("requests", done ? {...r, status:"Done", doneOn:TODAY(), statusBefore:r.status||"New"} : {...r, status:(r.statusBefore && r.statusBefore!=="Done") ? r.statusBefore : "In progress", doneOn:""});
       toast(done ? `Done: ${r.subject}` : `Reopened: ${r.subject}`); } catch(err){ toast("Couldn't save: "+(err.code||err)); } }
-  else if (a==="line-add"){ readForm(); (drawer.rec.lines ||= []).push({s:"", q:1, u:"month", p:0}); renderDrawer(); const ins = document.querySelectorAll(".lrow:not(.whead) input[data-l$='.s']"); if (ins.length) ins[ins.length-1].focus(); }
+  else if (a==="line-add"){ readForm(); const prevL = (drawer.rec.lines||[]).slice(-1)[0]; (drawer.rec.lines ||= []).push({s:"", q:1, u:"month", p:0, group: prevL ? prevL.group||"" : ""}); renderDrawer(); const ins = document.querySelectorAll(".lrow:not(.whead) input[data-l$='.s']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="line-del"){ readForm(); drawer.rec.lines.splice(+el.dataset.i, 1); renderDrawer(); }
   else if (a==="work-add-agreed"){ readForm(); const ag = agreedPrices(drawer.rec.clientId)[+el.dataset.i]; if (ag){ (drawer.rec.work ||= []).push({d:TODAY(), desc: ag.u==="pct" ? `${ag.s} (${pctText(ag)})` : ag.u==="item" && ag.unitLabel ? `${ag.s} (${ag.unitLabel})` : ag.s, q:1, u:unitToWork(ag.u), p: ag.u==="pct" ? (+ag.min||0) : (+ag.p||0)}); renderDrawer(); if (ag.u==="pct") toast("Percentage price: enter the actual amount (the minimum is filled in)."); } }
   else if (a==="prop-new"){ comp=null; const pre = el.dataset.client ? {clientId:el.dataset.client, lang:(byId("clients",el.dataset.client)||{}).lang||"sl"} : el.dataset.lead ? (()=>{ const l = byId("leads", el.dataset.lead)||{}; return {leadId:l.id, party:l.company||l.name||"", lang:l.lang||"sl", lines:(l.services||[]).map(s=>{ const pr = priceOf(s); return {s, q: pr.u==="employee"?(+l.employees||1):1, u:pr.u, p:+pr.p||0}; })}; })() : {};
@@ -2191,15 +2215,18 @@ document.addEventListener("input", e => {
     clearTimeout(prevT); prevT = setTimeout(refreshPaper, 250); return;
   }
   if (drawer && drawer.coll==="proposals" && t.dataset.l){
-    setPath(drawer.rec, t.dataset.l, t.dataset.num ? (t.value===""?"":+t.value) : t.value);
+    setPath(drawer.rec, t.dataset.l, t.dataset.bool ? t.checked : t.dataset.num ? (t.value===""?"":+t.value) : t.value);
+    if (t.dataset.bool || t.dataset.l.endsWith(".max") || t.dataset.l.endsWith(".group")) { const i2 = +t.dataset.l.split(".")[1], l2 = drawer.rec.lines[i2], a2 = document.querySelector(`[data-lamt="${i2}"]`);
+      if (a2 && l2.u!=="pct") a2.textContent = (l2.from?"from ":"")+eur2(lineAmt(l2))+(+l2.max>+l2.p?"–"+eur2(Math.round((+l2.q||0)*(+l2.max)*100)/100):"");
+      const tot2 = document.getElementById("proptotal"); if (tot2) tot2.innerHTML = groupTotalText(drawer.rec); return; }
     const i = +t.dataset.l.split(".")[1], l = drawer.rec.lines[i];
     if (t.dataset.l.endsWith(".s")) {
       const pv = pastServices()[t.value.trim().toLowerCase()];
-      if (pv && !+l.p) { Object.assign(l, {u:pv.u, p:pv.p, q:pv.q||1, desc:l.desc||pv.desc||"", unitLabel:pv.unitLabel||"", min:pv.min||""}); readForm(); renderDrawer(); const el = document.querySelector(`[data-l="lines.${i}.p"]`); if (el) el.focus(); return; }
+      if (pv && !+l.p) { Object.assign(l, {u:pv.u, p:pv.p, q:pv.q||1, desc:l.desc||pv.desc||"", unitLabel:pv.unitLabel||"", min:pv.min||"", from:!!pv.from, max:pv.max||""}); readForm(); renderDrawer(); const el = document.querySelector(`[data-l="lines.${i}.p"]`); if (el) el.focus(); return; }
       const pr = priceOf(t.value); if ((SERVICES.includes(t.value) || pkgs().some(p=>p.name===t.value)) && !+l.p) { l.p = +pr.p||0; l.u = pr.u; const row = t.closest(".wrow"); row.querySelector('[data-l$=".p"]').value = l.p; row.querySelector('[data-l$=".u"]').value = l.u; } }
     if (t.dataset.l.endsWith(".u")) { readForm(); renderDrawer(); return; }
     const a = document.querySelector(`[data-lamt="${i}"]`); if (a) a.textContent = l.u==="pct" ? pctText(l) : eur2(lineAmt(l));
-    const tot = document.getElementById("proptotal"); if (tot) tot.innerHTML = propTotalText(propTotals(drawer.rec));
+    const tot = document.getElementById("proptotal"); if (tot) tot.innerHTML = groupTotalText(drawer.rec);
     return;
   }
   if (drawer && drawer.coll==="requests" && t.dataset.w){
@@ -2235,6 +2262,7 @@ document.addEventListener("change", e => {
   if (e.target.id==="status"){ filter.status = e.target.value; render(); }
   if ((e.target.id==="f_status" || e.target.id==="f_clientId") && drawer && (drawer.coll==="requests" || drawer.coll==="proposals")){ readForm(); renderDrawer(); }
   if (e.target.id==="pstatus"){ filter.pstatus = e.target.value; render(); }
+  if (e.target.dataset && e.target.dataset.bool && drawer && drawer.coll==="proposals"){ drawer.rec && setPath(drawer.rec, e.target.dataset.l, e.target.checked); const tot = document.getElementById("proptotal"); if (tot) tot.innerHTML = groupTotalText(drawer.rec); }
   if (e.target.id==="rclient"){ filter.client = e.target.value; render(); }
   if (e.target.id==="ovyear"){ filter.year = e.target.value; render(); }
   if (e.target.id==="rmonth"){ filter.month = e.target.value; if (filter.month) filter.status = "all"; render(); }
@@ -2284,7 +2312,9 @@ document.addEventListener("submit", async e => {
   if (drawer.coll==="proposals") {
     if (!r.clientId && !String(r.party||"").trim()){ toast("Choose a client or enter the prospect's name"); return; }
     const bad = (r.lines||[]).findIndex(l=>!String(l.s||"").trim());
-    (r.lines||[]).forEach(l=>{ if (l.u!=="item") delete l.unitLabel; if (l.u!=="pct") delete l.min; else l.q = 1; });
+    (r.lines||[]).forEach(l=>{ if (l.u!=="item") delete l.unitLabel; if (l.u!=="pct") delete l.min; else { l.q = 1; delete l.from; delete l.max; } if (!(+l.max>+l.p)) delete l.max; if (!l.from) delete l.from; l.group = String(l.group||"").trim(); if (!l.group) delete l.group; });
+    if (r.status==="Accepted" && propGroups(r).length>1 && !(r.accepted||[]).length){ toast("Tick which options / sections the client accepted"); renderDrawer(); const f = document.querySelector('[name="accepted"]'); if (f) f.focus(); return; }
+    if (r.status!=="Accepted") delete r.accepted;
     if (bad>=0){ toast("Name the service in each row, or remove the empty row"); const el = document.querySelector(`[data-l="lines.${bad}.s"]`); if (el) el.focus(); return; }
     if ((r.status==="Accepted"||r.status==="Declined") && !r.decidedOn) r.decidedOn = TODAY();
   }
