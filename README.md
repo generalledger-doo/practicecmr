@@ -55,6 +55,20 @@ order by changed_at desc;
 
 To put an old version back: `insert into public.records (coll, id, data) values ('clients', '<id>', '<data from above>') on conflict (coll, id) do update set data = excluded.data;`
 
+### Email sorting straight into the CRM (drop box)
+
+The scheduled email-sorting agent can put what it finds into a drop box in the database. The CRM then shows
+*"From your email: N requests, M leads – Review and add / Dismiss"* on Overview, Requests and Leads.
+
+1. In Supabase, *SQL Editor* → paste all of `supabase/agent-inbox.sql` → *Run*.
+2. Create the agent's key: run `select public.create_agent_token('Claude email sorting');` and copy the
+   64-character result. It is shown only once; only a hash is stored.
+3. Give the key to the agent environment as a network secret for host `<project>.supabase.co`, header
+   `x-agent-token` (Claude asks for it with a secure form; never paste it into a chat).
+
+The key can only *add* to the drop box. It cannot read, change or delete anything in the CRM, and members
+decide what is added. To switch it off: `update public.agent_tokens set active = false;`
+
 ### How access is protected
 
 - Row-level security in `supabase/schema.sql`: only people in `members` who have signed in **with** their authenticator code can read or write anything. Anonymous visitors and invited-but-not-added users see nothing.

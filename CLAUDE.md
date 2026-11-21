@@ -148,6 +148,25 @@ Save to `data/import-gmail-<from>-<to>.json` and send it to the user (SendUserFi
   EORI & import VAT, Work & residence permits.
 - Write in the language of the mail (Slovenian, English or Bosnian/Croatian/Serbian).
 
+### 5b. Deliver it to the CRM drop box (preferred)
+
+If the environment can reach the Supabase project (host in `config.js`, `supabaseUrl`) and holds the
+agent key as a network credential for the header `x-agent-token`, put the import straight into the
+CRM's drop box instead of only sending a file. The user then sees a banner in the CRM and adds it with
+one click (same duplicate checks and purple marks as a file import).
+
+```bash
+python3 -c 'import json,sys; print(json.dumps({"p_payload": json.load(open(sys.argv[1])), "p_summary": sys.argv[2]}))' \
+  data/import-gmail-<from>-<to>.json "<period>: N requests, M leads" > /tmp/queue.json
+curl -sS -X POST "<supabaseUrl>/rest/v1/rpc/submit_import" \
+  -H "apikey: <supabaseAnonKey from config.js>" -H "Content-Type: application/json" \
+  -H "x-agent-token: placeholder-replaced-by-the-proxy" --data @/tmp/queue.json
+```
+
+The answer is the queue number. The real key is injected by the environment's proxy; never print,
+store or commit it. If the call fails (no key, host blocked, "invalid agent key"), fall back to sending
+the file with SendUserFile and say why. The key can only add to the drop box: it cannot read the CRM.
+
 ### 6. Report back
 
 Client email lists (company → addresses) can be added in the app under *Firm & accounting → Client
