@@ -501,7 +501,15 @@ function pastServices(){
   [...state.proposals].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))).forEach(r=>(r.lines||[]).forEach(l=>{ if (l.s && String(l.s).trim()) out[l.s.trim().toLowerCase()] = {...l, number:r.number, date:r.date}; }));
   return out;
 }
-const propClientId = r => r.clientId || ((byId("leads", r.leadId)||{}).clientId) || "";
+// a proposal belongs to its client, to the client its lead became, or (if unlinked) to the one client whose name its prospect name starts with
+const normName = n => String(n||"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"");
+function propClientId(r){
+  if (r.clientId) return r.clientId;
+  const viaLead = (byId("leads", r.leadId)||{}).clientId; if (viaLead) return viaLead;
+  const pn = normName(r.party); if (pn.length < 4) return "";
+  const hits = state.clients.filter(c=>{ const cn = normName(c.name); return cn.length >= 4 && (pn.startsWith(cn) || cn.startsWith(pn)); });
+  return hits.length===1 ? hits[0].id : "";
+}
 const propExpired = r => r.status==="Sent" && r.validUntil && r.validUntil < TODAY();
 function agreedPrices(clientId){
   if (!clientId) return [];
