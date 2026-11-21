@@ -13,6 +13,7 @@
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --sunken:#e9eeec; --line:#d5dddb; --fg:#17211f; --muted:#5b6a67;
   --accent:#1d5f6e; --accent-ink:#ffffff; --accent-soft:#dcebee;
+  --chk:#6b4fbb; --chk-soft:#efeaff;
   --ok:#2f7a4b; --ok-soft:#e1f1e6; --warn:#a2620b; --warn-soft:#fbeed8; --bad:#b0352c; --bad-soft:#f8e1de;
   --paper:#ffffff; --paper-ink:#1a1a1a; --paper-line:#cfcfcf;
   --font-display:"Literata",Georgia,serif; --font-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --font-data:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -20,11 +21,11 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111816; --surface:#18211f; --sunken:#0d1312; --line:#2b3835; --fg:#e4ecea; --muted:#93a4a0;
-  --accent:#6fb6c6; --accent-ink:#0b1517; --accent-soft:#1c3338;
+  --accent:#6fb6c6; --accent-ink:#0b1517; --accent-soft:#1c3338; --chk:#b9a3ff; --chk-soft:#2a2342;
   --ok:#6cc58f; --ok-soft:#173025; --warn:#e3a54b; --warn-soft:#352812; --bad:#f08077; --bad-soft:#3a1c19; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111816; --surface:#18211f; --sunken:#0d1312; --line:#2b3835; --fg:#e4ecea; --muted:#93a4a0;
-  --accent:#6fb6c6; --accent-ink:#0b1517; --accent-soft:#1c3338;
+  --accent:#6fb6c6; --accent-ink:#0b1517; --accent-soft:#1c3338; --chk:#b9a3ff; --chk-soft:#2a2342;
   --ok:#6cc58f; --ok-soft:#173025; --warn:#e3a54b; --warn-soft:#352812; --bad:#f08077; --bad-soft:#3a1c19; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -91,6 +92,11 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute
 .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--sunken);color:var(--muted);white-space:nowrap;letter-spacing:.02em}
 .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
 .pill.ex{background:transparent;border:1px dashed var(--muted)}
+.pill.chk{background:var(--chk);color:#fff}
+tr.review td{background:var(--chk-soft)}tr.review td:first-child{box-shadow:inset 4px 0 0 var(--chk)}
+.card.review{background:var(--chk-soft);border-color:var(--chk);box-shadow:inset 4px 0 0 var(--chk)}
+.reviewbox{grid-column:1/-1;background:var(--chk-soft);border:1px solid var(--chk);border-radius:var(--r);padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--fg)}
+.reviewbox b{color:var(--chk)}
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 table{border-collapse:collapse;width:100%;min-width:720px}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -973,12 +979,26 @@ async function importBackup(text, name){
       delete r.matchClient; delete r.matchEmails; }
     // leads from someone who is already a client are skipped: those belong in requests
     for (const [id, l] of Object.entries(d.leads||{})) { const c = clientByEmail(l.email); if (c) { skipped.push(`${l.name||l.email} (already client ${c.name})`); delete d.leads[id]; } }
+    // requests already written by hand: same client, similar subject, close date (or same case number)
+    const words = t => new Set(String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").split(/[^a-z0-9]+/).filter(w=>w.length>2 && !["the","and","for","fwd","re","za","in","na","od","pri"].includes(w)));
+    const sim = (a,b) => { const A = words(a), B = words(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach(w=>{ if (B.has(w)) n++; }); return n / Math.min(A.size, B.size); };
+    const days = (a,b) => a && b ? Math.abs((new Date(a) - new Date(b)) / 864e5) : 99;
+    let already = 0;
+    for (const [id, r] of Object.entries(d.requests||{})) {
+      if (state.requests.some(x=>x.id===id || (r.gmailThreadId && x.gmailThreadId===r.gmailThreadId))) continue;
+      const cands = state.requests.filter(x=>r.clientId && x.clientId===r.clientId && days(x.received||x.createdAt, r.received) <= 21);
+      const best = cands.map(x=>({x, s: (r.caseRef && x.caseRef && r.caseRef===x.caseRef) ? 1 : Math.max(sim(x.subject, r.subject), sim(x.subject+" "+(x.notes||""), r.subject+" "+(r.type||"")) * 0.9)})).sort((a,b)=>b.s-a.s)[0];
+      if (best && best.s >= 0.75) { delete d.requests[id]; already++; }
+      else if (best && best.s >= 0.4) r.review = [r.review, `Possibly already in Requests: “${best.x.subject}” (${fmtDate(best.x.received)})`].filter(Boolean).join(" · ");
+    }
+    for (const [id, l] of Object.entries(d.leads||{})) { if (state.leads.some(x=>x.id!==id && ((l.email && emailOf(x.email)===emailOf(l.email)) || (l.name && normName(x.name)===normName(l.name))))) { delete d.leads[id]; already++; } }
     // add only: never overwrite something already in Practice Desk (re-importing the same email does nothing)
     let dup = 0; if (j.addOnly) for (const c of Object.keys(d)) for (const id of Object.keys(d[c]||{})) { const have = (state[c]||[]).some(x=>x.id===id) || (c==="requests" && d[c][id].gmailThreadId && state.requests.some(x=>x.gmailThreadId===d[c][id].gmailThreadId)); if (have) { delete d[c][id]; dup++; } }
     const n2 = COLLS.reduce((s,c)=>s+Object.keys(d[c]||{}).length, 0);
-    if (!n2) { toast(dup ? `Nothing new: all ${dup} records are already in Practice Desk` : "Nothing to add"); return; }
+    if (!n2) { toast(dup||already ? `Nothing new: ${dup+already} already in Practice Desk` : "Nothing to add"); return; }
+    const flagged = COLLS.reduce((s,c)=>s+Object.values(d[c]||{}).filter(x=>x.review).length, 0);
     const parts = COLLS.filter(c=>Object.keys(d[c]||{}).length).map(c=>`${Object.keys(d[c]).length} ${c}`).join(", ");
-    if (!confirm(`Add ${parts} from ${name}?${linked.size?`\n\nLinked to existing clients: ${[...linked].join(", ")}.`:""}${dup?`\n${dup} already in Practice Desk – skipped.`:""}${skipped.length?`\nNot added as leads (already clients): ${skipped.join(", ")}.`:""}\n\nNothing else is changed.`)) return;
+    if (!confirm(`Add ${parts} from ${name}?${linked.size?`\n\nLinked to existing clients: ${[...linked].join(", ")}.`:""}${dup?`\n${dup} already imported before – skipped.`:""}${already?`\n${already} already written in Requests / Leads – skipped.`:""}${flagged?`\n${flagged} marked purple “Check” for you to verify.`:""}${skipped.length?`\nNot added as leads (already clients): ${skipped.join(", ")}.`:""}\n\nNothing else is changed.`)) return;
     const n = n2;
     try { if (db && db.load) await db.load(d, true); toast(`Added ${n} record${n===1?"":"s"}`); } catch(e){ toast("Import failed: " + (e.message||e.code||e)); }
     return;
@@ -1145,6 +1165,7 @@ function banner(){
   if (ex && view==="overview") out += `<div class="banner" data-tone="info">${ex} example records are loaded so you can see how things fit together. <button class="btn small" data-act="clear-examples">Remove examples</button></div>`;
   return out;
 }
+const chkTag = r => r.review ? ` <span class="pill chk" title="${esc(r.review)}">Check</span>` : "";
 const exTag = r => r.example ? ` <span class="pill ex">Example</span>` : "";
 function header(title, sub, newColl, extra=""){
   return `<div class="head"><div><h1>${title}</h1><p class="sub">${sub}</p></div><div class="tools">${extra}${newColl?`<button class="btn primary" data-act="new" data-coll="${newColl}">New ${SCHEMA[newColl].one}</button>`:""}</div></div>`;
@@ -1205,6 +1226,8 @@ function vOverview(){
 
   const att = [];
   const mailLeads = scan.items.filter(i=>i.kind==="lead"||i.kind==="unsorted").length;
+  const toCheck = state.requests.filter(r=>r.review).length + state.leads.filter(l=>l.review).length;
+  if (toCheck) att.push({d:-1001, tone:"chk", tag:"Check", t:`${toCheck} imported item${toCheck>1?"s":""} to verify (purple)`, go:"requests", checkFilter:true});
   if (mailLeads) att.push({d:-1000,tone:"acc",tag:"Gmail",t:`${mailLeads} new email${mailLeads>1?"s":""} to sort into leads or requests`,go:"inbox"});
   pipe.filter(l=>l.nextDate && daysUntil(l.nextDate)<=0).forEach(l=>att.push({d:daysUntil(l.nextDate),tone:daysUntil(l.nextDate)<0?"bad":"warn",tag:"Follow-up",t:`${l.company||l.name}: ${l.nextAction||"follow up"}`,coll:"leads",id:l.id}));
   openReq.filter(r=>r.due && daysUntil(r.due)<=2).forEach(r=>att.push({d:daysUntil(r.due),tone:daysUntil(r.due)<0?"bad":"warn",tag:"Request",t:`${r.subject}${r.clientId?" · "+clientName(r.clientId):""}`,coll:"requests",id:r.id}));
@@ -1240,7 +1263,7 @@ function vOverview(){
   </div>
   <div class="cols">
     <section class="panel"><h2>Needs attention</h2>
-      ${att.length?`<ul class="att">${att.slice(0,16).map(a=>`<li ${a.go?`data-go="${a.go}"`:`data-act="open" data-coll="${a.coll}" data-id="${a.id}"`} ${a.newAml?`data-newaml="${a.newAml}"`:""} tabindex="0"><span class="pill ${a.tone}">${esc(a.tag)}</span><span class="t">${esc(a.t)}</span><span class="d">${dLabel(a.d)}</span></li>`).join("")}</ul>`
+      ${att.length?`<ul class="att">${att.slice(0,16).map(a=>`<li ${a.go?`data-go="${a.go}" ${a.checkFilter?'data-check="1"':""}`:`data-act="open" data-coll="${a.coll}" data-id="${a.id}"`} ${a.newAml?`data-newaml="${a.newAml}"`:""} tabindex="0"><span class="pill ${a.tone}">${esc(a.tag)}</span><span class="t">${esc(a.t)}</span><span class="d">${dLabel(a.d)}</span></li>`).join("")}</ul>`
       :`<div class="empty"><b>Nothing urgent</b>New Gmail enquiries, follow-ups, due requests and AML reviews show up here.</div>`}
     </section>
     <div class="stack">
@@ -1299,8 +1322,8 @@ function vLeads(){
     return `<div class="lane"><header><span>${label}</span><span class="mono">${cards.length} · ${eur(cards.reduce((a,x)=>a+(+x.fee||0),0))}</span></header>
       ${cards.map(l=>{ const d = daysUntil(l.nextDate); const tone = d===null?"":d<0?"bad":d===0?"warn":"";
         const q = state.documents.filter(x=>x.refId===l.id && x.type==="quote").length;
-        return `<div class="card" data-act="open" data-coll="leads" data-id="${l.id}" tabindex="0">
-          <span class="co">${esc(l.company||l.name)}${exTag(l)}${/formation/i.test(l.inquiry||"")?` <span class="pill acc">Formation</span>`:""}</span>
+        return `<div class="card ${l.review?"review":""}" data-act="open" data-coll="leads" data-id="${l.id}" tabindex="0">
+          <span class="co">${esc(l.company||l.name)}${exTag(l)}${chkTag(l)}${/formation/i.test(l.inquiry||"")?` <span class="pill acc">Formation</span>`:""}</span>
           ${l.company?`<span class="meta">${esc(l.name)}${l.source?` · ${esc(l.source)}`:""}</span>`:""}
           <span class="meta"><span>${esc((l.services||[]).join(", "))}</span><span class="mono">${l.fee?eur(l.fee)+"/mo":""}</span></span>
           ${l.nextAction||l.nextDate?`<span class="na">${l.nextDate?`<span class="pill ${tone}">${fmtDate(l.nextDate)}</span> `:""}${esc(l.nextAction||"")}</span>`:""}
@@ -1421,7 +1444,7 @@ function vAml(){
 
 function currentRequests(){
   return state.requests.filter(r=>match(r,["subject","from","client","type","assignee","submittedTo","caseRef","notes"])).filter(r=>!filter.month || reqMonth(r)===filter.month).filter(r=>!filter.client || r.clientId===filter.client)
-    .filter(r=> filter.status==="all" ? true : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
+    .filter(r=> filter.status==="all" ? true : filter.status==="check" ? !!r.review : filter.status==="open" ? r.status!=="Done" : r.status===filter.status)
     .sort((a,b)=> filter.month ? String(a.received||"").localeCompare(String(b.received||"")) : (a.due||"9999").localeCompare(b.due||"9999"));
 }
 function vRequests(){
@@ -1431,7 +1454,7 @@ function vRequests(){
   const withReq = [...new Set(state.requests.map(r=>r.clientId).filter(Boolean))].map(id=>byId("clients",id)).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
   const csel = `<select id="rclient" aria-label="Client"><option value="">All clients</option>${withReq.map(c=>`<option value="${c.id}" ${filter.client===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`;
   const pr = {Urgent:"bad",High:"warn",Normal:"",Low:""}, st = {New:"acc","In progress":"","Waiting on client":"warn",Done:"ok"};
-  const sel = `<select id="status" aria-label="Status filter">${[["open","Open"],["all","All"],...REQ_STATUS.map(s=>[s,s])].map(([v,l])=>`<option value="${v}" ${filter.status===v?"selected":""}>${l}</option>`).join("")}</select>`;
+  const sel = `<select id="status" aria-label="Status filter">${[["open","Open"],["all","All"],["check","To check"],...REQ_STATUS.map(s=>[s,s])].map(([v,l])=>`<option value="${v}" ${filter.status===v?"selected":""}>${l}</option>`).join("")}</select>`;
   let summary = "";
   if (filter.month) {
     const wr = workRows(filter.month), by = {};
@@ -1444,9 +1467,9 @@ function vRequests(){
   }
   return header("Requests", "Everything clients ask for and the extra work you do for them. Add priced rows under “Work done”, then pick a month to see and export what to bill.", "requests", search("Search requests")+msel+csel+sel+`<button class="btn" data-act="req-pdf" ${rs.length?"":"disabled"}>Print PDF</button>`+exportBtn("requests")) + summary +
   (rs.length?`<div class="tablewrap"><table><thead><tr><th class="chk"><span class="sr">Done</span></th><th>Request</th><th>From</th><th>Type</th><th>Priority</th><th>Status</th><th>Received</th><th>Due</th><th>Owner</th><th class="num">Work €</th></tr></thead><tbody>
-  ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0" class="${r.status==="Done"?"done":""}">
+  ${rs.map(r=>`<tr data-act="open" data-coll="requests" data-id="${r.id}" tabindex="0" class="${r.status==="Done"?"done":""} ${r.review?"review":""}">
     <td class="chk"><input type="checkbox" data-act="req-done" data-id="${r.id}" ${r.status==="Done"?"checked":""} aria-label="${r.status==="Done"?"Done – untick to reopen":"Mark as done"}: ${esc(r.subject)}" title="${r.status==="Done"?"Done"+(r.doneOn?" on "+fmtDate(r.doneOn):"")+" – untick to reopen":"Mark as done"}"></td>
-    <td><b>${esc(r.subject)}</b>${exTag(r)}<span class="sec">${esc(r.channel||"")}${r.gmailUrl?" · from Gmail":""}</span></td>
+    <td><b>${esc(r.subject)}</b>${exTag(r)}${chkTag(r)}<span class="sec">${r.review?`<span style="color:var(--chk)">${esc(r.review)}</span> · `:""}${esc(r.channel||"")}${r.gmailUrl?" · from Gmail":""}</span></td>
     <td>${esc(clientName(r.clientId)||r.from||"—")}</td><td>${esc(r.type||"")}${r.submittedTo?`<span class="sec">→ ${esc(r.submittedTo)}${r.caseRef?" · "+esc(r.caseRef):""}</span>`:""}</td>
     <td><span class="pill ${pr[r.priority]||""}">${esc(r.priority||"Normal")}</span></td>
     <td><span class="pill ${st[r.status]||""}">${esc(r.status||"New")}</span></td>
@@ -1642,6 +1665,7 @@ function renderDrawer(){
   o.innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle">
     <header><h3 id="dtitle">${drawer.isNew?"New "+S.one:esc(S.title(r)||S.one)}</h3><span class="tools">${gmailLink(r)}<button class="btn small" data-act="close" aria-label="Close">Close</button></span></header>
     <form id="form" novalidate>
+      ${saved && r.review ? `<div class="reviewbox"><span><b>Check:</b> ${esc(r.review)}</span><button type="button" class="btn small" data-act="review-ok">Verified – keep it</button>${r.gmailUrl?`<a class="btn small" href="${esc(r.gmailUrl)}" target="_blank" rel="noopener">Open email</a>`:""}</div>` : ""}
       ${extra?`<div class="gm tools">${extra}</div>`:""}
       ${docs.length?`<div class="gm">Documents: ${docs.map(d=>`${esc(d.number)} (${esc(d.status)})`).join(", ")}</div>`:""}
       ${saved && drawer.coll==="clients" ? agreedHtml(r.id) : ""}
@@ -2270,6 +2294,7 @@ async function act(el){
   else if (a==="prop-accept"){ readForm(); drawer.rec.status = "Accepted"; drawer.rec.decidedOn = drawer.rec.decidedOn || TODAY(); renderDrawer(); toast("Marked accepted. Save to keep it."); }
   else if (a==="req-pdf"){ const rs = currentRequests(); const cl = filter.client ? byId("clients", filter.client) : null; const sl = !cl || cl.lang!=="en";
     printDoc(requestsPdfHtml(rs, sl), `zahtevki${filter.month?"-"+filter.month:""}${cl?"-"+cl.name.replace(/[^\p{L}\p{N}._-]+/gu,"_").slice(0,40):""}.pdf`); }
+  else if (a==="review-ok"){ if (!drawer) return; readForm(); const coll = drawer.coll, r = {...drawer.rec, review:""}; try { await save(coll, r); drawer.rec = r; renderDrawer(); toast("Verified"); } catch(e){ toast("Couldn't save: " + (e.code||e)); } }
   else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
   else if (a==="year-export"){ const y = filter.year || TODAY().slice(0,4); offer(`zahtevki-${y}.csv`, yearCsv(y)); }
@@ -2283,7 +2308,7 @@ async function act(el){
   else if (a==="imp-cancel"){ importPreview=null; render(); }
 }
 document.addEventListener("click", e => {
-  const go = e.target.closest("[data-go]"); if (go){ location.hash = go.dataset.go; return; }
+  const go = e.target.closest("[data-go]"); if (go){ if (go.dataset.check) filter.status = "check"; location.hash = go.dataset.go; return; }
   const mo = e.target.closest("tr[data-month]"); if (mo){ filter.month = mo.dataset.month; filter.status = "all"; location.hash = "requests"; return; }
   const el = e.target.closest("[data-act]"); if (!el) return;
   if (["stage","convert","compose"].includes(el.dataset.act)) e.stopPropagation();
