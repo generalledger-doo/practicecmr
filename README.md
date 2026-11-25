@@ -69,6 +69,17 @@ The scheduled email-sorting agent can put what it finds into a drop box in the d
 The key can only *add* to the drop box. It cannot read, change or delete anything in the CRM, and members
 decide what is added. To switch it off: `update public.agent_tokens set active = false;`
 
+### Files: signed contracts, AML evidence, IDs
+
+Each client has a *Files* section (online version only). Files are stored in a private Supabase Storage
+bucket that only members signed in with their authenticator code can open (one-minute links).
+
+1. In Supabase, *SQL Editor* → paste all of `supabase/files.sql` → *Run* (safe to run again).
+2. In the CRM, open a client → *Files* → choose the type (and optionally the contract it belongs to) →
+   *Upload file…*. Linking a contract marks it *Accepted / signed* under Documents, with a 📎 link.
+
+Backups (*Download backup*) contain the list of files but not the files themselves; Supabase keeps them.
+
 ### How access is protected
 
 - Row-level security in `supabase/schema.sql`: only people in `members` who have signed in **with** their authenticator code can read or write anything. Anonymous visitors and invited-but-not-added users see nothing.
