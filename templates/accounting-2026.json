@@ -1,0 +1,93 @@
+{
+  "name": "Accounting – Pogodba o vodenju poslovnih knjig (2026)",
+  "kind": "Accounting",
+  "numFmt": "NN/YYYY",
+  "source": "Pogodba_racunovodstvo.docx, reviewed 2026",
+  "sl": {
+    "title": "Pogodba o vodenju poslovnih knjig",
+    "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, davčna številka: {{firm.taxNo}}, matična številka: {{firm.regNo}}, ki ga zastopa {{f.firmRep}}, v nadaljevanju izvajalec\n\nin\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, matična številka: {{client.regNo}}, davčna številka: {{client.taxNo}}, ki ga zastopa {{client.contact}}, v nadaljevanju naročnik\n\n# POGODBA O VODENJU POSLOVNIH KNJIG\n## Št. {{doc.number}}\n\n## I. PREDMET POGODBE\n## 1. člen\nS to pogodbo se pogodbeni stranki sporazumeta, da izvajalec za naročnika vodi poslovne knjige in opravlja druge dogovorjene računovodske storitve v skladu z veljavnimi predpisi in Slovenskimi računovodskimi standardi.\n\n## 2. člen (storitve, vključene v mesečni pavšal)\nMesečni pavšal obsega:\n- {{f.included}}\n\n## 3. člen (dodatne storitve in poseben obračun)\nNaslednje storitve niso vključene v mesečni pavšal in so predmet posebnega obračuna po dogovorjeni ceni oziroma ceniku izvajalca:\n- {{f.extra}}\n\n?f.hourly Dodatne storitve, za katere cena ni posebej dogovorjena, se obračunajo po urni postavki {{f.hourly}} EUR brez DDV.\nStroški tretjih oseb (upravne takse, notar, sodni tolmači, poštnina) niso vključeni v ceno in se naročniku zaračunajo po dejanskih stroških.\n\n## II. OBVEZNOSTI IN ODGOVORNOST\n## 4. člen (obveznosti izvajalca)\nIzvajalec se zavezuje, da bo storitve opravljal strokovno, vestno in v skladu z veljavno zakonodajo ter v zakonskih rokih oddajal obračune in poročila, za katere je pravočasno prejel popolno dokumentacijo. Naročnikove podatke bo obravnaval kot poslovno skrivnost.\n\n## 5. člen (obveznosti naročnika)\nNaročnik se zavezuje, da bo izvajalcu pravočasno in redno dostavljal popolno in verodostojno knjigovodsko dokumentacijo, in sicer:\n- knjigovodske listine za pretekli mesec (prejeti in izdani računi, bančni izpiski, pogodbe in drugo) najpozneje do {{f.docsDay}} v mesecu;\n- podatke za obračun plač (ure, odsotnosti, potni nalogi, spremembe zaposlitev) najpozneje do {{f.payrollDay}} v mesecu za pretekli mesec;\n- spremembe podatkov o družbi, lastnikih in zaposlenih takoj, ko nastanejo.\n\nNaročnik odgovarja za verodostojnost in popolnost listin ter za pravočasno plačilo svojih davkov in prispevkov.\n\n## 6. člen (odgovornost)\nIzvajalec ne odgovarja za posledice (globe, zamudne obresti, izgubo pravic), ki nastanejo zaradi nepravočasno dostavljene, nepopolne ali neverodostojne dokumentacije ali zaradi tega, ker naročnik ni upošteval pisnih opozoril izvajalca.\n?f.liability Odgovornost izvajalca za škodo je omejena {{f.liability}}.\n\n## 7. člen (varstvo osebnih podatkov)\nIzvajalec pri opravljanju storitev v imenu naročnika obdeluje osebne podatke zaposlenih in drugih oseb kot pogodbeni obdelovalec v skladu s 28. členom Splošne uredbe o varstvu podatkov (GDPR) in Zakonom o varstvu osebnih podatkov. Osebne podatke obdeluje le za namen izvajanja te pogodbe in po navodilih naročnika, zagotavlja ustrezne tehnične in organizacijske ukrepe za njihovo varnost ter zaupnost oseb, ki jih obdelujejo, in naročnika brez nepotrebnega odlašanja obvesti o vsaki kršitvi varnosti. Po prenehanju pogodbe podatke vrne naročniku oziroma jih izbriše, razen če jih mora hraniti na podlagi zakona.\n\n## 8. člen (preprečevanje pranja denarja)\nNaročnik izvajalcu predloži podatke in dokumente, ki jih izvajalec potrebuje za izvedbo pregleda stranke po Zakonu o preprečevanju pranja denarja in financiranja terorizma (ZPPDFT-2), in ga obvešča o njihovih spremembah. Če pregleda stranke ni mogoče opraviti, lahko izvajalec zavrne izvedbo storitve oziroma odstopi od pogodbe.\n\n## III. CENA IN PLAČILNI POGOJI\n## 9. člen\nZa storitve iz 2. člena naročnik plačuje mesečni pavšal. V ceni ni vštet DDV.\n?f.fee Dogovorjeni mesečni pavšal znaša {{f.fee}} EUR brez DDV.\nČe se obseg poslovanja naročnika (število knjigovodskih listin, zaposlenih ali transakcij) bistveno spremeni, lahko izvajalec pavšal uskladi, o čemer naročnika pisno obvesti najmanj en mesec vnaprej.\n\n## 10. člen\nNaročnik se zaveže račun izvajalca poravnati v roku {{f.payDays}} dni od datuma izstavitve. V primeru zamude se obračunajo zakonite zamudne obresti. Če naročnik zamuja s plačilom tudi po pisnem opominu, lahko izvajalec do plačila zadrži izvajanje storitev.\n\n## IV. TRAJANJE, ODPOVED IN PREHOD\n## 11. člen\nPogodba je sklenjena za nedoločen čas. Vsaka pogodbena stranka jo lahko pisno odpove z odpovednim rokom {{f.notice}}. Izvajalec lahko pogodbo odpove brez odpovednega roka, če naročnik dvakrat zaporedoma ne poravna svojih obveznosti ali huje krši 5. oziroma 8. člen te pogodbe.\n\n## 12. člen (prehod k drugemu izvajalcu)\nV primeru odpovedi pogodbe in prehoda k drugemu izvajalcu storitev si izvajalec pridržuje pravico zaračunati pripravo izpisov poslovnih knjig in prenos dokumentacije v višini enega mesečnega pavšala. Izvajalec izroči dokumentacijo v roku 5 dni od prejema plačila vseh obveznosti.\n\n## 13. člen (hramba dokumentacije)\nIzvajalec hrani prejeto dokumentacijo v času trajanja pogodbe in jo ob prenehanju pogodbe vrne naročniku. Naročnik hrani knjigovodske listine v zakonskih rokih.\n\n## V. KONČNE DOLOČBE\n## 14. člen\nSpremembe in dopolnitve pogodbe veljajo le v pisni obliki; za pisno obliko šteje tudi izmenjava po elektronski pošti. Morebitne spore bosta pogodbeni stranki reševali sporazumno, sicer je pristojno stvarno pristojno sodišče po sedežu izvajalca.\n\n## 15. člen\nPogodba stopi v veljavo z dnem podpisa obeh pogodbenih strank in se uporablja od {{f.startDate}} dalje. Sestavljena je v dveh enakih izvodih, po en za vsako stranko.\n\nV Rogatcu, dne {{doc.date}}\n\n|| IZVAJALEC: __________________________ \\\\ {{firm.name}} || NAROČNIK: __________________________ \\\\ {{client.contact}}"
+  },
+  "en": {
+    "title": "Bookkeeping Services Agreement",
+    "body": "**{{firm.name}}**, {{firm.address}}, {{firm.postcode}} {{firm.city}}, Slovenia, tax number: {{firm.taxNo}}, registration number: {{firm.regNo}}, represented by {{f.firmRep}}, hereinafter the Provider\n\nand\n\n**{{client.name}}**, {{client.address}}, {{client.postcode}} {{client.city}}, registration number: {{client.regNo}}, tax number: {{client.taxNo}}, represented by {{client.contact}}, hereinafter the Client\n\n# BOOKKEEPING SERVICES AGREEMENT\n## No. {{doc.number}}\n\n## I. SUBJECT OF THE AGREEMENT\n## Article 1\nBy this Agreement the parties agree that the Provider keeps the Client's books of account and performs other agreed accounting services in accordance with the applicable regulations and the Slovenian Accounting Standards.\n\n## Article 2 (services included in the monthly flat fee)\nThe monthly flat fee covers:\n- {{f.included}}\n\n## Article 3 (additional services charged separately)\nThe following services are not included in the monthly flat fee and are charged separately at the agreed price or according to the Provider's price list:\n- {{f.extra}}\n\n?f.hourly Additional services without a separately agreed price are charged at an hourly rate of EUR {{f.hourly}} excluding VAT.\nThird-party costs (administrative fees, notary, sworn translators, postage) are not included and are charged to the Client at actual cost.\n\n## II. OBLIGATIONS AND LIABILITY\n## Article 4 (Provider's obligations)\nThe Provider undertakes to perform the services professionally, diligently and in accordance with applicable law, and to file returns and reports by the statutory deadlines for which it has received complete documentation in time. The Provider treats the Client's data as a business secret.\n\n## Article 5 (Client's obligations)\nThe Client undertakes to deliver complete and authentic accounting documentation to the Provider regularly and on time, namely:\n- accounting documents for the previous month (purchase and sales invoices, bank statements, contracts and other) no later than the {{f.docsDay}} of the month;\n- payroll data (hours, absences, travel orders, employment changes) no later than the {{f.payrollDay}} of the month for the previous month;\n- changes to company, owner and employee data as soon as they occur.\n\nThe Client is responsible for the authenticity and completeness of the documents and for paying its taxes and contributions on time.\n\n## Article 6 (liability)\nThe Provider is not liable for consequences (fines, late-payment interest, loss of rights) arising from late, incomplete or untrue documentation, or from the Client not following the Provider's written warnings.\n?f.liability The Provider's liability for damages is limited {{f.liability}}.\n\n## Article 7 (personal data protection)\nIn performing the services on the Client's behalf, the Provider processes personal data of employees and other persons as a processor under Article 28 of the General Data Protection Regulation (GDPR) and the Slovenian Personal Data Protection Act. It processes personal data only to perform this Agreement and on the Client's instructions, ensures appropriate technical and organisational security measures and the confidentiality of the persons processing them, and notifies the Client of any security breach without undue delay. On termination it returns the data to the Client or deletes it, unless the law requires it to be kept.\n\n## Article 8 (anti-money laundering)\nThe Client provides the Provider with the data and documents the Provider needs for customer due diligence under the Slovenian Prevention of Money Laundering and Terrorist Financing Act (ZPPDFT-2) and informs it of any changes. If due diligence cannot be carried out, the Provider may refuse to perform a service or withdraw from the Agreement.\n\n## III. PRICE AND PAYMENT TERMS\n## Article 9\nFor the services under Article 2 the Client pays a monthly flat fee. VAT is not included.\n?f.fee The agreed monthly flat fee is EUR {{f.fee}} excluding VAT.\nIf the volume of the Client's business (number of documents, employees or transactions) changes significantly, the Provider may adjust the fee, giving the Client written notice at least one month in advance.\n\n## Article 10\nThe Client shall pay the Provider's invoices within {{f.payDays}} days of the invoice date. Statutory default interest is charged on late payments. If the Client is still in default after a written reminder, the Provider may suspend the services until payment.\n\n## IV. TERM, TERMINATION AND HANDOVER\n## Article 11\nThe Agreement is concluded for an indefinite period. Either party may terminate it in writing with a notice period of {{f.notice}}. The Provider may terminate it without notice if the Client fails to meet its payment obligations twice in a row or seriously breaches Article 5 or 8.\n\n## Article 12 (handover to another provider)\nOn termination and transfer to another service provider, the Provider may charge for preparing printouts of the books and handing over the documentation in the amount of one monthly fee. The Provider hands over the documentation within 5 days of receiving payment of all outstanding obligations.\n\n## Article 13 (keeping of documentation)\nThe Provider keeps the documentation received for the duration of the Agreement and returns it to the Client on termination. The Client keeps its accounting documents for the statutory periods.\n\n## V. FINAL PROVISIONS\n## Article 14\nAmendments to this Agreement are valid only in writing; an exchange of e-mails also counts as written form. The parties will try to settle disputes amicably; otherwise the court with subject-matter jurisdiction at the Provider's registered office has jurisdiction.\n\n## Article 15\nThe Agreement enters into force when signed by both parties and applies from {{f.startDate}}. It is made in two identical copies, one for each party.\n\nRogatec, {{doc.date}}\n\n|| PROVIDER: __________________________ \\\\ {{firm.name}} || CLIENT: __________________________ \\\\ {{client.contact}}"
+  },
+  "fields": [
+    {
+      "k": "firmRep",
+      "l": "Provider represented by",
+      "t": "text",
+      "dsl": "direktorica Klara Boršič",
+      "den": "director Klara Boršič"
+    },
+    {
+      "k": "included",
+      "l": "Services included in the monthly flat fee (one per line)",
+      "t": "list",
+      "dsl": "Vodenje glavne knjige in temeljnic, knjiženje bančnih izpiskov ter vodenje saldakontov kupcev in dobaviteljev.\nVodenje knjig prejetih in izdanih računov, obračun DDV (DDV-O) in rekapitulacijsko poročilo.\nVodenje registra osnovnih sredstev in obračun amortizacije.\nObračun plač in nadomestil plač.\nObračun prispevkov za socialno varnost in davkov ter oddaja obračunov in poročanje institucijam (FURS, ZPIZ, ZZZS).\nSvetovanje v obsegu do 1 ure na mesec.",
+      "den": "Keeping the general ledger and journals, posting bank statements and keeping customer and supplier ledgers.\nKeeping purchase and sales invoice books, VAT returns (DDV-O) and recapitulative statements.\nKeeping the fixed asset register and calculating depreciation.\nPayroll and salary compensation.\nCalculation of social security contributions and taxes, filing of returns and reporting to the authorities (FURS, ZPIZ, ZZZS).\nAdvice of up to 1 hour per month."
+    },
+    {
+      "k": "extra",
+      "l": "Additional services charged separately (one per line)",
+      "t": "list",
+      "dsl": "Letno poročilo in davčni obračun (bilanca stanja, izkaz poslovnega izida, davčni obračun DDPO oziroma davčni obračun s.p.) ter oddaja na AJPES in FURS.\nSvetovanje, ki presega 1 uro na mesec.\nPoročila in podatki za banke, leasing družbe in druge finančne institucije.\nDelovna dovoljenja in dovoljenja za prebivanje tujcev (enotna dovoljenja, podaljšanja, sprememba delodajalca) pri UE in ZRSZ.\nKadrovske storitve: priprava pogodb o zaposlitvi, prijave in odjave delavcev v socialna zavarovanja, prijava družinskih članov v zdravstveno zavarovanje, evropske kartice zdravstvenega zavarovanja in obrazci A1.\nLicence za mednarodni prevoz pri GZS (EU licenca, izvodi licence, spričevala voznikov).\nVračila DDV v drugih državah EU.\nIzdajanje računov v imenu in za račun naročnika.\nUveljavljanje refundacij nadomestil plač (ZZZS, ZPIZ, portal SPOT).\nPotrdila in izpisi za naročnika ter zastopanje v postopkih davčnega nadzora.\nPopravki obračunov in poročil zaradi naknadno dostavljenih ali napačnih listin naročnika.\nUstanovitve, statusne spremembe, prenosi poslovnih deležev in sodelovanje z notarjem.",
+      "den": "Annual report and tax return (balance sheet, income statement, corporate income tax return or sole-trader tax return) and filing with AJPES and FURS.\nAdvice beyond 1 hour per month.\nReports and data for banks, leasing companies and other financial institutions.\nWork and residence permits for foreign nationals (single permits, renewals, change of employer) at the administrative unit (UE) and the Employment Service (ZRSZ).\nHR services: employment contracts, registering and deregistering employees for social insurance, registering family members for health insurance, European health insurance cards and A1 forms.\nInternational transport licences at GZS (EU licence, certified copies, driver attestations).\nVAT refunds in other EU countries.\nIssuing invoices in the name and on behalf of the Client.\nClaiming refunds of salary compensation (ZZZS, ZPIZ, SPOT portal).\nCertificates and statements for the Client and representation in tax inspections.\nCorrections of returns and reports due to late or incorrect documents from the Client.\nCompany formations, status changes, transfers of shares and coordination with the notary."
+    },
+    {
+      "k": "hourly",
+      "l": "Hourly rate for other additional work (EUR, optional)",
+      "t": "number",
+      "dsl": "=firm.hourly",
+      "den": "=firm.hourly"
+    },
+    {
+      "k": "docsDay",
+      "l": "Accounting documents due by",
+      "t": "text",
+      "dsl": "8. dne",
+      "den": "8th day"
+    },
+    {
+      "k": "payrollDay",
+      "l": "Payroll data due by",
+      "t": "text",
+      "dsl": "tretjega delovnega dne",
+      "den": "third working day"
+    },
+    {
+      "k": "liability",
+      "l": "Liability cap (optional, e.g. 'do višine pavšalov, plačanih v zadnjih 12 mesecih')",
+      "t": "text",
+      "dsl": "",
+      "den": ""
+    },
+    {
+      "k": "fee",
+      "l": "Monthly flat fee in EUR (optional – adds a sentence to Article 9)",
+      "t": "number",
+      "dsl": "=client.fee",
+      "den": "=client.fee"
+    },
+    {
+      "k": "payDays",
+      "l": "Invoice payment term (days)",
+      "t": "number",
+      "dsl": "10",
+      "den": "10"
+    },
+    {
+      "k": "notice",
+      "l": "Notice period",
+      "t": "text",
+      "dsl": "enega meseca",
+      "den": "one month"
+    },
+    {
+      "k": "startDate",
+      "l": "Applies from",
+      "t": "date",
+      "dsl": "=today",
+      "den": "=today"
+    }
+  ]
+}
