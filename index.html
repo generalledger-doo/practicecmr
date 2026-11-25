@@ -187,6 +187,7 @@ tr.done td:not(.chk){color:var(--muted)}tr.done td b{text-decoration:line-throug
 .agreed .sub{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 table.mini{min-width:0;background:transparent}table.mini td{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);font-size:13px}table.mini td.sec{color:var(--muted);font-size:12px}
 .printhost{position:fixed;left:-10000px;top:0}
+.files .upl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.files .upl select{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:4px 6px;font-size:13px;max-width:100%}
 ul.plan{margin:10px 0 0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:6px}
 .printdoc{width:186mm;background:#fff;color:#1a1a1a;font-family:Calibri,Arial,sans-serif;font-size:10.5pt;line-height:1.35}
 .printdoc .ph{display:flex;justify-content:space-between;gap:16px;font-size:9pt;color:#444;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:14px}.printdoc .ph .r{text-align:right}
@@ -649,7 +650,7 @@ function riskOf(r){
 const riskTone = l => l==="High"?"bad":l==="Medium"?"warn":"ok";
 
 // ---------- state & store ----------
-const COLLS = ["leads","clients","formations","aml","requests","documents","inbox","templates","proposals"];
+const COLLS = ["leads","clients","formations","aml","requests","documents","inbox","templates","proposals","files"];
 const state = Object.fromEntries(COLLS.map(c=>[c,[]]));
 let firm = structuredClone(DEFAULT_FIRM);
 let db = null, mcp = null, sample = null, downloads = null, fileArgs = false;
@@ -887,6 +888,41 @@ async function queueHandle(id, status){
   const {error} = await sb.from("import_queue").update({status, handled_by: u && u.user ? u.user.id : null, handled_at: new Date().toISOString()}).eq("id", q.id);
   if (error) { toast("Couldn't update the drop box: " + error.message); return; }
   agentQueue = agentQueue.filter(q=>String(q.id)!==String(id)); render();
+}
+
+// ---------- client files (Supabase Storage, private bucket "files") ----------
+const FILE_KINDS = ["Signed contract","AML evidence","ID / passport","Power of attorney","Company documents","Other"];
+const fileSize = n => n >= 1048576 ? (n/1048576).toFixed(1).replace(".",",")+" MB" : Math.max(1, Math.round(n/1024))+" KB";
+function filesHtml(clientId){
+  const fs = state.files.filter(f=>f.clientId===clientId).sort((a,b)=>String(b.uploadedAt).localeCompare(String(a.uploadedAt)));
+  if (mode!=="online") return `<div class="f wide agreed"><span class="lbl">Files</span><span class="sub">Storing signed contracts and documents works in the online version of Practice Desk (signed in).</span></div>`;
+  const docs = state.documents.filter(d=>d.refColl==="clients" && d.refId===clientId).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  return `<div class="f wide agreed files"><span class="lbl">Files (signed contracts, AML evidence, IDs)</span>
+    ${fs.length?`<table class="mini"><tbody>${fs.map(f=>`<tr><td><a href="#" data-act="file-open" data-id="${f.id}">${esc(f.name)}</a>${f.docNumber?` <span class="sec">· ${esc(f.docNumber)}</span>`:""}</td><td><span class="pill ${f.kind==="Signed contract"?"ok":""}">${esc(f.kind||"Other")}</span></td><td class="sec">${fmtDate(String(f.uploadedAt||"").slice(0,10))}${f.size?" · "+fileSize(f.size):""}</td><td><button type="button" class="btn small" data-act="file-del" data-id="${f.id}" aria-label="Delete ${esc(f.name)}">✕</button></td></tr>`).join("")}</tbody></table>`:`<span class="sub">No files yet.</span>`}
+    <div class="upl"><select id="fkind" aria-label="Type of file">${FILE_KINDS.map(k=>`<option>${k}</option>`).join("")}</select>
+      <select id="fdoc" aria-label="Contract it belongs to"><option value="">— not linked to a document —</option>${docs.map(d=>`<option value="${d.id}">${esc(d.number)} · ${esc(d.title||DOC_TYPES[d.type]?.l||d.type)} (${esc(d.status||"")})</option>`).join("")}</select>
+      <label class="btn small primary" for="fupload">Upload file…</label><input type="file" id="fupload" data-client="${clientId}" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp,.doc,.docx" hidden></div>
+    <span class="sub">PDF, photo or Word, up to 20 MB. Choosing a document marks it “Accepted / signed”.</span></div>`;
+}
+async function uploadClientFile(clientId, file){
+  if (!sb || mode!=="online") { toast("Files can only be stored in the online version"); return; }
+  if (file.size > 20*1024*1024) { toast("The file is larger than 20 MB"); return; }
+  const kind = (document.getElementById("fkind")||{}).value || "Other", docId = (document.getElementById("fdoc")||{}).value || "";
+  const id = uid(), path = `${clientId}/${id}-${safeFile(file.name)}`;
+  toast("Uploading " + file.name + "…");
+  const {error} = await sb.storage.from("files").upload(path, file, {contentType: file.type || "application/octet-stream", upsert:false});
+  if (error) { toast("Upload failed: " + error.message + (/bucket/i.test(error.message)?" – run supabase/files.sql in Supabase first":"")); return; }
+  const doc = docId ? byId("documents", docId) : null;
+  const {data:u} = await sb.auth.getUser();
+  await save("files", {id, clientId, name:file.name, kind, path, size:file.size, mime:file.type||"", docId, docNumber: doc ? doc.number : "", uploadedAt:new Date().toISOString(), uploadedBy:(me&&me.name)||(u&&u.user&&u.user.email)||""});
+  if (doc) await save("documents", {...doc, status:"Accepted / signed", signedFileId:id, signedOn: doc.signedOn || TODAY()});
+  toast(`Saved ${file.name}`); renderDrawer();
+}
+async function openClientFile(id){
+  const f = byId("files", id); if (!f) return;
+  const {data, error} = await sb.storage.from("files").createSignedUrl(f.path, 60);
+  if (error || !data) { toast("Couldn't open the file: " + (error && error.message || "")); return; }
+  window.open(data.signedUrl, "_blank", "noopener");
 }
 
 function startOnline(){
@@ -1519,7 +1555,7 @@ function vDocuments(){
     <td>${esc((d.lang||"").toUpperCase())}</td><td class="num">${fmtDate(d.date)}</td>
     <td class="num" style="text-align:right">${[d.monthly?eur(d.monthly)+"/mo":"", d.amount?eur(d.amount):""].filter(Boolean).join(" + ")||"—"}</td>
     <td><select data-docstatus="${d.id}" aria-label="Status of ${esc(d.number)}" style="border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:3px 6px">${DOC_STATUS.map(s=>`<option ${d.status===s?"selected":""}>${s}</option>`).join("")}</select> <span class="pill ${tone[d.status]||""}" style="display:none"></span></td>
-    <td>${d.draftUrl?`<a class="btn small" href="${esc(d.draftUrl)}" target="_blank" rel="noopener">Gmail</a>`:""}</td></tr>`).join("")}
+    <td>${d.signedFileId && byId("files", d.signedFileId)?`<a class="btn small" href="#" data-act="file-open" data-id="${d.signedFileId}" title="Open the signed copy">📎 Signed</a>`:""}${d.draftUrl?`<a class="btn small" href="${esc(d.draftUrl)}" target="_blank" rel="noopener">Gmail</a>`:""}</td></tr>`).join("")}
   </tbody></table></div>`:`<div class="empty"><b>No documents yet</b>Send a quote from a lead card, or open a client to prepare a service agreement or AML questionnaire.</div>`);
 }
 
@@ -1697,7 +1733,7 @@ function renderDrawer(){
       ${saved && r.review ? `<div class="reviewbox"><span><b>Check:</b> ${esc(r.review)}</span><button type="button" class="btn small" data-act="review-ok">Verified – keep it</button>${r.gmailUrl?`<a class="btn small" href="${esc(r.gmailUrl)}" target="_blank" rel="noopener">Open email</a>`:""}</div>` : ""}
       ${extra?`<div class="gm tools">${extra}</div>`:""}
       ${docs.length?`<div class="gm">Documents: ${docs.map(d=>`${esc(d.number)} (${esc(d.status)})`).join(", ")}</div>`:""}
-      ${saved && drawer.coll==="clients" ? agreedHtml(r.id) : ""}
+      ${saved && drawer.coll==="clients" ? agreedHtml(r.id) + filesHtml(r.id) : ""}
       ${S.fields.map(f=>fieldHtml(f,r)).join("")}</form>
     <footer><div class="r">${drawer.isNew?"":drawer.confirm?`<span class="confirm">Delete for good? <button type="button" class="btn small danger" data-act="delete-yes">Delete</button><button type="button" class="btn small" data-act="delete-no">Keep</button></span>`:`<button type="button" class="btn danger" data-act="delete">Delete</button>`}</div>
     <div class="r"><button type="button" class="btn" data-act="close">Cancel</button><button type="submit" form="form" class="btn primary">Save</button></div></footer></aside>`;
@@ -2330,6 +2366,10 @@ async function act(el){
   else if (a==="review-ok"){ if (!drawer) return; readForm(); const coll = drawer.coll, r = {...drawer.rec, review:""}; try { await save(coll, r); drawer.rec = r; renderDrawer(); toast("Verified"); } catch(e){ toast("Couldn't save: " + (e.code||e)); } }
   else if (a==="queue-add"){ const q = agentQueue.find(x=>String(x.id)===String(id)); if (!q) return; const res = await importBackup(JSON.stringify(q.payload), "your email"); if (res==="done") await queueHandle(id, "imported"); }
   else if (a==="queue-dismiss"){ if (!confirm("Dismiss this batch from email? Nothing is added; it stays in the drop box as dismissed.")) return; await queueHandle(id, "dismissed"); toast("Dismissed"); }
+  else if (a==="file-open"){ await openClientFile(id); }
+  else if (a==="file-del"){ const f = byId("files", id); if (!f) return; if (!confirm(`Delete ${f.name} for good? It can't be recovered.`)) return;
+    const {error} = await sb.storage.from("files").remove([f.path]); if (error) { toast("Couldn't delete: " + error.message); return; }
+    await remove("files", id); for (const d of state.documents.filter(d=>d.signedFileId===id)) await save("documents", {...d, signedFileId:""}); toast("Deleted"); renderDrawer(); }
   else if (a==="work-add"){ readForm(); (drawer.rec.work ||= []).push(newWorkRow()); renderDrawer(); const ins = document.querySelectorAll(".wrow:not(.whead) input[data-w$='.desc']"); if (ins.length) ins[ins.length-1].focus(); }
   else if (a==="work-del"){ readForm(); drawer.rec.work.splice(+el.dataset.i, 1); renderDrawer(); }
   else if (a==="year-export"){ const y = filter.year || TODAY().slice(0,4); offer(`zahtevki-${y}.csv`, yearCsv(y)); }
@@ -2430,6 +2470,7 @@ document.addEventListener("change", e => {
   if (e.target.id==="rmonth"){ filter.month = e.target.value; if (filter.month) filter.status = "all"; render(); }
   if (e.target.id==="ct_client"){ ctClient = e.target.value; render(); }
   if (e.target.dataset.docstatus){ const d = byId("documents", e.target.dataset.docstatus); if (d) save("documents", {...d, status:e.target.value}).then(()=>toast("Status updated")).catch(err=>toast("Couldn't save: "+(err.code||err))); }
+  if (e.target.id==="fupload" && e.target.files[0]){ const f = e.target.files[0], cid = e.target.dataset.client; e.target.value = ""; uploadClientFile(cid, f); }
   if (e.target.id==="restorefile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>importBackup(t, f.name)); e.target.value=""; }
   if (e.target.id==="impfile" && e.target.files[0]){ const f = e.target.files[0]; f.text().then(t=>prepImport(t, f.name)); e.target.value=""; }
 });
