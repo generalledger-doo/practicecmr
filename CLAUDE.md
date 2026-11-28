@@ -27,7 +27,20 @@ clients (name, `email`, `noticeEmail`, `otherEmails`, `contact`), leads, request
 `settings.firm.hourly`. Without the backup, still work, but use `matchEmails` / `matchClient`
 (below) instead of client ids and say that matching is less reliable.
 
-### 2. Read the mail
+### 2. Read the mail – always from where the last check ended
+
+Never re-read a fixed number of days. Ask the drop box first (needs the agent key, see 5b):
+
+```bash
+curl -sS -X POST "<supabaseUrl>/rest/v1/rpc/agent_state" -H "apikey: <supabaseAnonKey>" \
+  -H "Content-Type: application/json" -H "x-agent-token: placeholder-replaced-by-the-proxy" -d '{}'
+```
+
+It answers `{"last_checked_to": "<timestamp>", "delivered_thread_ids": [...]}`. Read only mail after
+`last_checked_to` (Gmail accepts Unix seconds: `after:1764351840`) and **skip every thread in
+`delivered_thread_ids`** – those are already in the CRM or waiting there, even if they got a new message.
+The period of this run is `last_checked_to` → now. Only if the call fails (no key, no network), fall back
+to the period the user names, or the last 3 days, and say so.
 
 Search both received and **sent** mail for the period, e.g.
 `after:2026/11/01 -category:promotions -category:social -category:forums -in:sent` and
@@ -163,6 +176,9 @@ curl -sS -X POST "<supabaseUrl>/rest/v1/rpc/submit_import" \
   -H "x-agent-token: placeholder-replaced-by-the-proxy" --data @/tmp/queue.json
 ```
 
+Always add the period: `{"p_payload": …, "p_summary": …, "p_period_from": "<last_checked_to>", "p_period_to": "<now, ISO>"}`.
+Deliver even when nothing new was found (`"data": {"requests": {}, "leads": {}}`): that records where the
+check ended, so the next run continues from there (the app files empty runs away without a banner).
 The answer is the queue number. The real key is injected by the environment's proxy; never print,
 store or commit it. If the call fails (no key, host blocked, "invalid agent key"), fall back to sending
 the file with SendUserFile and say why. The key can only add to the drop box: it cannot read the CRM.

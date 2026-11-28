@@ -872,22 +872,33 @@ function attachStore(){
 let agentQueue = [];
 async function loadQueue(){
   if (!sb || mode!=="online") return;
-  const {data, error} = await sb.from("import_queue").select("id,created_at,summary,payload").eq("status","pending").order("id");
-  if (error) return; // table not set up yet: nothing to show
-  agentQueue = data || []; render();
+  const {data, error} = await sb.from("import_queue").select("id,created_at,summary,payload,period_from,period_to").eq("status","pending").order("id");
+  if (error) return; // drop box not set up yet: nothing to show
+  const rows = data || [];
+  // runs that found nothing only mark where the check ended: file them away without a banner
+  for (const q of rows.filter(q=>!batchCount(q.payload).total)) await sb.from("import_queue").update({status:"imported", handled_at:new Date().toISOString()}).eq("id", q.id);
+  agentQueue = rows.filter(q=>batchCount(q.payload).total); render();
+}
+const batchCount = pl => { const d = (pl||{}).data||{}, r = Object.keys(d.requests||{}).length, l = Object.keys(d.leads||{}).length; return {r, l, total:r+l}; };
+// all waiting batches as one import: the same email delivered twice counts once (the newest version wins)
+function mergedQueue(){
+  const data = {};
+  for (const q of agentQueue) for (const [coll, recs] of Object.entries(((q.payload||{}).data)||{})) Object.assign(data[coll] ||= {}, recs);
+  return {app:"practice-desk-crm", version:1, addOnly:true, data};
 }
 function queueBanner(){
   if (!agentQueue.length || !["overview","requests","leads"].includes(view)) return "";
-  return agentQueue.map(q=>{ const d = (q.payload||{}).data||{}, nr = Object.keys(d.requests||{}).length, nl = Object.keys(d.leads||{}).length;
-    return `<div class="banner" data-tone="chk"><span><b>From your email</b> (${fmtDate(String(q.created_at).slice(0,10))}): ${nr} request${nr===1?"":"s"}${nl?`, ${nl} lead${nl===1?"":"s"}`:""}${q.summary?` – ${esc(q.summary)}`:""}</span>
-      <button class="btn small primary" data-act="queue-add" data-id="${q.id}">Review and add</button><button class="btn small" data-act="queue-dismiss" data-id="${q.id}">Dismiss</button></div>`; }).join("");
+  const c = batchCount(mergedQueue());
+  const from = agentQueue.map(q=>q.period_from).filter(Boolean).sort()[0], to = agentQueue.map(q=>q.period_to||q.created_at).filter(Boolean).sort().slice(-1)[0];
+  const per = from ? `${fmtDate(String(from).slice(0,10))} – ${fmtDate(String(to).slice(0,10))}` : `checked ${fmtDate(String(to).slice(0,10))}`;
+  return `<div class="banner" data-tone="chk"><span><b>From your email</b> (${per}): ${c.r} request${c.r===1?"":"s"}${c.l?`, ${c.l} lead${c.l===1?"":"s"}`:""}${agentQueue.length>1?` · ${agentQueue.length} runs combined`:""}</span>
+    <button class="btn small primary" data-act="queue-add">Review and add</button><button class="btn small" data-act="queue-dismiss">Dismiss</button></div>`;
 }
-async function queueHandle(id, status){
-  const q = agentQueue.find(x=>String(x.id)===String(id)); if (!q) return;
+async function queueHandleAll(status){
   const {data:u} = await sb.auth.getUser();
-  const {error} = await sb.from("import_queue").update({status, handled_by: u && u.user ? u.user.id : null, handled_at: new Date().toISOString()}).eq("id", q.id);
-  if (error) { toast("Couldn't update the drop box: " + error.message); return; }
-  agentQueue = agentQueue.filter(q=>String(q.id)!==String(id)); render();
+  for (const q of agentQueue) { const {error} = await sb.from("import_queue").update({status, handled_by: u && u.user ? u.user.id : null, handled_at: new Date().toISOString()}).eq("id", q.id);
+    if (error) { toast("Couldn't update the drop box: " + error.message); return; } }
+  agentQueue = []; render();
 }
 
 // ---------- client files (Supabase Storage, private bucket "files") ----------
@@ -2364,8 +2375,8 @@ async function act(el){
   else if (a==="req-pdf"){ const rs = currentRequests(); const cl = filter.client ? byId("clients", filter.client) : null; const sl = !cl || cl.lang!=="en";
     printDoc(requestsPdfHtml(rs, sl), `zahtevki${filter.month?"-"+filter.month:""}${cl?"-"+cl.name.replace(/[^\p{L}\p{N}._-]+/gu,"_").slice(0,40):""}.pdf`); }
   else if (a==="review-ok"){ if (!drawer) return; readForm(); const coll = drawer.coll, r = {...drawer.rec, review:""}; try { await save(coll, r); drawer.rec = r; renderDrawer(); toast("Verified"); } catch(e){ toast("Couldn't save: " + (e.code||e)); } }
-  else if (a==="queue-add"){ const q = agentQueue.find(x=>String(x.id)===String(id)); if (!q) return; const res = await importBackup(JSON.stringify(q.payload), "your email"); if (res==="done") await queueHandle(id, "imported"); }
-  else if (a==="queue-dismiss"){ if (!confirm("Dismiss this batch from email? Nothing is added; it stays in the drop box as dismissed.")) return; await queueHandle(id, "dismissed"); toast("Dismissed"); }
+  else if (a==="queue-add"){ if (!agentQueue.length) return; const res = await importBackup(JSON.stringify(mergedQueue()), "your email"); if (res==="done") await queueHandleAll("imported"); }
+  else if (a==="queue-dismiss"){ if (!confirm("Dismiss everything waiting from email? Nothing is added; the next check still continues after this period.")) return; await queueHandleAll("dismissed"); toast("Dismissed"); }
   else if (a==="file-open"){ await openClientFile(id); }
   else if (a==="file-del"){ const f = byId("files", id); if (!f) return; if (!confirm(`Delete ${f.name} for good? It can't be recovered.`)) return;
     const {error} = await sb.storage.from("files").remove([f.path]); if (error) { toast("Couldn't delete: " + error.message); return; }
